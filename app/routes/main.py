@@ -34,14 +34,12 @@ def _get_allowed_units() -> list:
     
     user_unit = (current_user.unit or "").strip()
     
-    # Sử dụng LOWER và TRIM ở cả 2 vế trong SQL để loại bỏ hoàn toàn lỗi lệch khoảng trắng hoặc hoa/thường
     mappings = TrungTamMapping.query.filter(
         db.func.lower(db.func.trim(TrungTamMapping.trung_tam_quan_ly)) == user_unit.lower()
     ).all()
     
     allowed = [m.to_ky_thuat for m in mappings]
     
-    # Nếu chưa cấu hình mapping, mặc định lấy chính unit của user
     if not allowed:
         allowed = [current_user.unit]
         
@@ -50,10 +48,8 @@ def _get_allowed_units() -> list:
 
 @main_bp.get("/")
 def dashboard():
-    # Không yêu cầu đăng nhập vẫn xem được dashboard
     batch = UploadBatch.query.order_by(UploadBatch.uploaded_at.desc()).first()
     
-    # Lấy toàn bộ tất cả các phiếu tồn không phân biệt đơn vị để hiển thị chung cho mọi người dùng
     ticket_query = Ticket.query.filter_by(status=Ticket.STATUS_WAITING)
     tickets = (
         ticket_query.order_by(Ticket.unit, Ticket.age_hours.desc())
@@ -87,7 +83,6 @@ def dashboard():
         "reported": sum(row["reported"] for row in summary_rows),
     }
     
-    # Xử lý lấy danh sách đơn vị được phép quản lý trước khi truyền vào template
     allowed_units = _get_allowed_units() if current_user.is_authenticated else []
 
     return render_template(
@@ -101,11 +96,36 @@ def dashboard():
     )
 
 
+@main_bp.post("/change-password")
+@login_required
+def change_password():
+    """Xử lý đổi mật khẩu ngay từ giao diện Modal trên Dashboard"""
+    old_password = request.form.get("old_password", "")
+    new_password = request.form.get("new_password", "")
+    confirm_password = request.form.get("confirm_password", "")
+
+    if not current_user.check_password(old_password):
+        flash("Mật khẩu hiện tại không chính xác.", "error")
+        return redirect(url_for("main.dashboard"))
+
+    if new_password != confirm_password:
+        flash("Mật khẩu mới và xác nhận mật khẩu không khớp.", "error")
+        return redirect(url_for("main.dashboard"))
+
+    if len(new_password) < 6:
+        flash("Mật khẩu mới phải có ít nhất 6 ký tự.", "error")
+        return redirect(url_for("main.dashboard"))
+
+    current_user.set_password(new_password)
+    db.session.commit()
+    
+    flash("Đổi mật khẩu thành công!", "success")
+    return redirect(url_for("main.dashboard"))
+
+
 @main_bp.get("/tickets/<int:ticket_id>")
 @login_required
 def ticket_detail(ticket_id: int):
-    """Trang chi tiết khi nhấn vào mã thuê bao hoặc tên thuê bao: 
-    Kiểm tra đăng nhập (@login_required) và kiểm tra quyền quản lý đơn vị tổ kỹ thuật."""
     ticket = db.get_or_404(Ticket, ticket_id)
     
     if not current_user.is_admin:
@@ -120,7 +140,6 @@ def ticket_detail(ticket_id: int):
 @main_bp.route("/upload", methods=["GET", "POST"])
 @login_required
 def upload():
-    # Kiểm tra nếu không phải admin thì chặn lại và thông báo lỗi
     if not current_user.is_admin:
         flash("Bạn không có quyền thực hiện chức năng upload file.", "error")
         return redirect(url_for("main.dashboard"))

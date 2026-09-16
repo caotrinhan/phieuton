@@ -7,8 +7,29 @@
     <p>{% if batch %}Dữ liệu được cập nhật lúc {{ batch.uploaded_at.strftime('%d/%m/%Y %H:%M:%S') }}; Người cập nhật: {{ batch.uploaded_by.full_name }}{% else %}Chưa có dữ liệu{% endif %}</p>
   </div>
   <div class="heading-actions">
-    {% if current_user.is_authenticated and current_user.is_admin %}
-      <a class="button primary" href="{{ url_for('main.upload') }}">Upload file tồn mới</a>
+    {% if current_user.is_authenticated %}
+      <!-- Dropdown Quản lý Tài khoản & Đăng xuất -->
+      <div class="dropdown d-inline-block">
+        <button class="button secondary dropdown-toggle" type="button" id="userMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="fas fa-user-circle me-1"></i> {{ current_user.full_name or current_user.email }}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userMenuButton">
+          <li>
+            <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+              <i class="fas fa-key me-2 text-primary"></i> Đổi mật khẩu
+            </button>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+              <i class="fas fa-sign-out-alt me-2"></i> Đăng xuất
+            </a>
+          </li>
+        </ul>
+      </div>
+      {% if current_user.is_admin %}
+        <a class="button primary" href="{{ url_for('main.upload') }}">Upload file tồn mới</a>
+      {% endif %}
     {% else %}
       <a class="button primary" href="{{ url_for('auth.login') }}">Đăng nhập hệ thống</a>
     {% endif %}
@@ -194,6 +215,38 @@
   </div>
 </dialog>
 
+<!-- Modal Đổi Mật Khẩu -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="changePasswordModalLabel"><i class="fas fa-key me-2"></i> Đổi mật khẩu tài khoản</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('main.change_password') }}" method="POST">
+                <div class="modal-body text-start">
+                    <div class="mb-3">
+                        <label for="old_password" class="form-label">Mật khẩu hiện tại</label>
+                        <input type="password" class="form-control" id="old_password" name="old_password" required placeholder="Nhập mật khẩu cũ...">
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">Mật khẩu mới</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" required placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)...">
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Xác nhận mật khẩu mới</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required placeholder="Nhập lại mật khẩu mới...">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% else %}
 <section class="empty panel">
   <h2>Chưa có dữ liệu</h2>
@@ -214,27 +267,19 @@
   var isAdmin = {{ 'true' if current_user.is_admin else 'false' }};
   var allowedUnits = {{ allowed_units | tojson }};
 
-  // Xử lý sự kiện click mở modal cập nhật phiếu kèm kiểm tra đăng nhập và quyền đơn vị
   document.querySelectorAll('[data-modal]').forEach(function(button){
     button.addEventListener('click', function(e){
       e.preventDefault();
-
-      // 1. Kiểm tra nếu chưa đăng nhập thì chuyển hướng sang trang login
       if (!isAuthenticated) {
         window.location.href = "{{ url_for('auth.login', next=request.path) }}";
         return;
       }
-
       var ticketUnit = button.getAttribute('data-ticket-unit');
-      
-      // 2. Kiểm tra quyền quản lý đơn vị tổ kỹ thuật
       var hasPermission = isAdmin || allowedUnits.includes(ticketUnit);
-
       if (!hasPermission) {
         alert('Đơn vị của bạn không quản lý tổ kỹ thuật này (' + ticketUnit + '). Bạn không thể cập nhật phiếu này.');
         return;
       }
-
       var modalId = button.dataset.modal;
       var modal = document.getElementById(modalId);
       if (modal) {
