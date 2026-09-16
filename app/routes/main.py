@@ -32,24 +32,32 @@ def _get_allowed_units() -> list:
     if current_user.is_admin:
         return []
     
-    # Tìm kiếm không phân biệt chữ hoa/thường và khoảng trắng thừa để tránh lệch dữ liệu
-    user_unit_normalized = (current_user.unit or "").strip().lower()
-    all_mappings = TrungTamMapping.query.all()
+    user_unit = (current_user.unit or "").strip()
     
-    allowed = [
-        m.to_ky_thuat for m in all_mappings 
-        if m.trung_tam_quan_ly and m.trung_tam_quan_ly.strip().lower() == user_unit_normalized
-    ]
+    # Truy vấn trực tiếp từ DB với điều kiện bọc trim() để tránh lỗi khoảng trắng hoặc lệch collation
+    mappings = TrungTamMapping.query.filter(
+        db.func.trim(TrungTamMapping.trung_tam_quan_ly) == user_unit
+    ).all()
     
-    # Nếu chưa cấu hình mapping, mặc định cho phép unit của chính user
+    allowed = [m.to_ky_thuat for m in mappings]
+    
+    # Nếu vẫn trống, thử truy vấn không phân biệt hoa thường hoặc in hoa toàn bộ trong SQL
+    if not allowed:
+        mappings_ci = TrungTamMapping.query.filter(
+            db.func.lower(db.func.trim(TrungTamMapping.trung_tam_quan_ly)) == user_unit.lower()
+        ).all()
+        allowed = [m.to_ky_thuat for m in mappings_ci]
+
+    # Nếu chưa cấu hình mapping, mặc định lấy chính unit của user
     if not allowed:
         allowed = [current_user.unit]
+        
     return allowed
 
 
 @main_bp.get("/")
-@login_required
 def dashboard():
+    # Không yêu cầu đăng nhập vẫn xem được dashboard
     batch = UploadBatch.query.order_by(UploadBatch.uploaded_at.desc()).first()
     
     # Lấy toàn bộ tất cả các phiếu tồn không phân biệt đơn vị để hiển thị chung cho mọi người dùng
@@ -95,6 +103,24 @@ def dashboard():
         summary_total=summary_total,
         _get_allowed_units=_get_allowed_units
     )
+
+
+@main_bp.get("/tickets/<int:ticket_id>")
+@login_required
+def ticket_detail(ticket_id: int):
+    """Trang chi tiết khi nhấn vào mã thuê bao hoặc tên thuê bao: 
+    Kiểm tra đăng nhập (@login_required) và kiểm tra quyền quản lý đơn vị tổ kỹ thuật."""
+    ticket = db.get_or_404(Ticket, ticket_id)
+    
+    if not current_user.is_admin:
+        allowed_units = _get_allowed_units()
+        if ticket.unit not in allowed_units:
+            flash(f"Đơn vị của bạn không quản lý tổ kỹ thuật này ({ticket.unit}). Bạn không thể xem chi tiết phiếu này.", "error")
+            return redirect(url_for("main.dashboard"))
+            
+    # Trả về trang chi tiết phiếu (hoặc template tương ứng của bạn nếu có, ví dụ ticket_detail.html)
+    # Nếu giao diện của bạn hiển thị modal hoặc trang riêng, bạn có thể điều chỉnh tại đây.
+    return render_template("ticket_detail.html", ticket=ticket)
 
 
 @main_bp.route("/upload", methods=["GET", "POST"])

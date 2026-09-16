@@ -7,7 +7,11 @@
     <p>{% if batch %}Dữ liệu được cập nhật lúc {{ batch.uploaded_at.strftime('%d/%m/%Y %H:%M:%S') }}; Người cập nhật: {{ batch.uploaded_by.full_name }}{% else %}Chưa có dữ liệu{% endif %}</p>
   </div>
   <div class="heading-actions">
-    <a class="button primary" href="{{ url_for('main.upload') }}">Upload batch mới</a>
+    {% if current_user.is_authenticated %}
+      <a class="button primary" href="{{ url_for('main.upload') }}">Upload batch mới</a>
+    {% else %}
+      <a class="button primary" href="{{ url_for('auth.login') }}">Đăng nhập hệ thống</a>
+    {% endif %}
     {% if batch %}<a class="button secondary" href="{{ url_for('main.export_xlsx') }}">Xuất Excel</a>{% endif %}
   </div>
 </div>
@@ -76,7 +80,7 @@
 <section class="panel detail-panel">
   <div class="panel-title">
     <h2>Chi tiết</h2>
-    <p class="panel-help">Nhấn vào mã thuê bao hoặc tên thuê bao để cập nhật lý do tồn / upload hình ảnh liên quan (Hệ thống sẽ kiểm tra quyền quản lý Tổ kỹ thuật).</p>
+    <p class="panel-help">Nhấn vào mã thuê bao hoặc tên thuê bao để cập nhật lý do tồn / upload hình ảnh liên quan (Hệ thống sẽ kiểm tra đăng nhập và quyền quản lý Tổ kỹ thuật).</p>
     <span>{{ tickets|length }} dòng</span>
   </div>
   <div class="table-wrap">
@@ -194,7 +198,11 @@
 <section class="empty panel">
   <h2>Chưa có dữ liệu</h2>
   <p>Upload hai file đầu vào để bắt đầu theo dõi.</p>
-  <a class="button primary" href="{{ url_for('main.upload') }}">Upload dữ liệu</a>
+  {% if current_user.is_authenticated %}
+    <a class="button primary" href="{{ url_for('main.upload') }}">Upload dữ liệu</a>
+  {% else %}
+    <a class="button primary" href="{{ url_for('auth.login') }}">Đăng nhập để Upload</a>
+  {% endif %}
 </section>
 {% endif %}
 {% endblock %}
@@ -202,25 +210,32 @@
 {% block scripts %}
 <script>
 (function(){
+  var isAuthenticated = {{ 'true' if current_user.is_authenticated else 'false' }};
   var isAdmin = {{ 'true' if current_user.is_admin else 'false' }};
-  // Danh sách các tổ kỹ thuật thuộc quyền quản lý của đơn vị người dùng (được truyền từ backend)
   var allowedUnits = {{ _get_allowed_units() | tojson }};
 
-  // Xử lý sự kiện click mở modal cập nhật phiếu kèm kiểm tra quyền đơn vị
+  // Xử lý sự kiện click mở modal cập nhật phiếu kèm kiểm tra đăng nhập và quyền đơn vị
   document.querySelectorAll('[data-modal]').forEach(function(button){
     button.addEventListener('click', function(e){
-      var modalId = button.dataset.modal;
+      e.preventDefault();
+
+      // 1. Kiểm tra nếu chưa đăng nhập thì chuyển hướng sang trang login
+      if (!isAuthenticated) {
+        window.location.href = "{{ url_for('auth.login', next=request.path) }}";
+        return;
+      }
+
       var ticketUnit = button.getAttribute('data-ticket-unit');
       
-      // Kiểm tra xem tổ kỹ thuật của phiếu có thuộc quyền quản lý của user hay không (hoặc là admin)
+      // 2. Kiểm tra quyền quản lý đơn vị tổ kỹ thuật
       var hasPermission = isAdmin || allowedUnits.includes(ticketUnit);
 
       if (!hasPermission) {
-        e.preventDefault();
         alert('Đơn vị của bạn không quản lý tổ kỹ thuật này (' + ticketUnit + '). Bạn không thể cập nhật phiếu này.');
         return;
       }
 
+      var modalId = button.dataset.modal;
       var modal = document.getElementById(modalId);
       if (modal) {
         modal.showModal();
