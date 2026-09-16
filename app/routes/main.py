@@ -94,6 +94,9 @@ def dashboard():
         "reported": sum(row["reported"] for row in summary_rows),
     }
     
+    # Xử lý lấy danh sách đơn vị được phép quản lý trước khi truyền vào template
+    allowed_units = _get_allowed_units() if current_user.is_authenticated else []
+
     return render_template(
         "dashboard.html", 
         batch=batch, 
@@ -101,7 +104,7 @@ def dashboard():
         units=units, 
         summary_rows=summary_rows, 
         summary_total=summary_total,
-        _get_allowed_units=_get_allowed_units
+        allowed_units=allowed_units
     )
 
 
@@ -118,8 +121,6 @@ def ticket_detail(ticket_id: int):
             flash(f"Đơn vị của bạn không quản lý tổ kỹ thuật này ({ticket.unit}). Bạn không thể xem chi tiết phiếu này.", "error")
             return redirect(url_for("main.dashboard"))
             
-    # Trả về trang chi tiết phiếu (hoặc template tương ứng của bạn nếu có, ví dụ ticket_detail.html)
-    # Nếu giao diện của bạn hiển thị modal hoặc trang riêng, bạn có thể điều chỉnh tại đây.
     return render_template("ticket_detail.html", ticket=ticket)
 
 
@@ -215,7 +216,6 @@ def upload():
 def update_reason(ticket_id: int):
     ticket = db.get_or_404(Ticket, ticket_id)
     
-    # Kiểm tra phân quyền cập nhật theo nhóm tổ kỹ thuật
     if not current_user.is_admin:
         allowed_units = _get_allowed_units()
         if ticket.unit not in allowed_units:
@@ -273,7 +273,6 @@ def export_xlsx():
         flash("Chưa có dữ liệu để xuất.", "error")
         return redirect(url_for("main.dashboard"))
         
-    # Xuất toàn bộ danh sách phiếu hiện có
     ticket_query = Ticket.query.filter_by(status=Ticket.STATUS_WAITING)
     tickets = ticket_query.order_by(Ticket.unit, Ticket.age_hours.desc()).all()
     

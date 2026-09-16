@@ -212,7 +212,7 @@
 (function(){
   var isAuthenticated = {{ 'true' if current_user.is_authenticated else 'false' }};
   var isAdmin = {{ 'true' if current_user.is_admin else 'false' }};
-  var allowedUnits = {{ _get_allowed_units() | tojson }};
+  var allowedUnits = {{ allowed_units | tojson }};
 
   // Xử lý sự kiện click mở modal cập nhật phiếu kèm kiểm tra đăng nhập và quyền đơn vị
   document.querySelectorAll('[data-modal]').forEach(function(button){
