@@ -1,3 +1,4 @@
+{% extends 'base.html' %}
 {% block content %}
 <div class="page-heading"><div><p class="eyebrow">VNPT CÀ MAU · 09/2026</p><h1>Phiếu tồn trên 48 giờ</h1><p>{% if batch %}Batch {{ batch.uploaded_at.strftime('%d/%m/%Y %H:%M:%S') }} · upload bởi {{ batch.uploaded_by.full_name }}{% else %}Chưa có batch dữ liệu{% endif %}</p></div><div class="heading-actions"><a class="button primary" href="{{ url_for('main.upload') }}">Upload batch mới</a>{% if batch %}<a class="button secondary" href="{{ url_for('main.export_xlsx') }}">Xuất Excel</a>{% endif %}</div></div>
 {% if batch %}
