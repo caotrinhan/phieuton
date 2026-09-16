@@ -8,14 +8,26 @@
   </div>
   <div class="heading-actions" style="align-items: center;">
     {% if current_user.is_authenticated %}
-      <!-- Menu tài khoản thuần CSS tích hợp sẵn -->
+      {% if current_user.is_admin %}
+        <a class="button primary" href="{{ url_for('main.upload') }}">Upload file tồn mới</a>
+      {% endif %}
+    {% else %}
+      <a class="button primary" href="{{ url_for('auth.login') }}">Đăng nhập hệ thống</a>
+    {% endif %}
+
+    {% if batch %}
+      <a class="button secondary" href="{{ url_for('main.export_xlsx') }}">Xuất Excel</a>
+    {% endif %}
+
+    {% if current_user.is_authenticated %}
+      <!-- Menu tài khoản thuần CSS tích hợp sẵn nằm ở cùng bên phải -->
       <div class="user-menu-dropdown" style="position: relative; display: inline-block;">
         <button class="button secondary user-menu-btn" type="button" id="userMenuToggle" style="background: #fff; display: flex; align-items: center; gap: 6px;">
           <span>{{ current_user.full_name or current_user.email }}</span>
           <i class="fas fa-chevron-down" style="font-size: 10px;"></i>
         </button>
         <div id="userMenuDropdownContent" style="display: none; position: absolute; right: 0; top: 105%; background: #fff; border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0,0,0,0.12); border-radius: 4px; min-width: 180px; z-index: 1000; padding: 6px 0;">
-          <button type="button" data-bs-toggle="modal" data-bs-target="#changePasswordModal" style="width: 100%; text-align: left; background: none; border: none; padding: 10px 16px; font: 13px Arial,sans-serif; cursor: pointer; color: var(--ink); display: flex; align-items: center; gap: 8px;" onmouseover="this.style.background='#f5f7f4'" onmouseout="this.style.background='transparent'">
+          <button type="button" id="openChangePasswordBtn" style="width: 100%; text-align: left; background: none; border: none; padding: 10px 16px; font: 13px Arial,sans-serif; cursor: pointer; color: var(--ink); display: flex; align-items: center; gap: 8px;" onmouseover="this.style.background='#f5f7f4'" onmouseout="this.style.background='transparent'">
             <i class="fas fa-key" style="color: var(--green);"></i> Đổi mật khẩu
           </button>
           <div style="height: 1px; background: var(--line); margin: 4px 0;"></div>
@@ -24,14 +36,7 @@
           </a>
         </div>
       </div>
-
-      {% if current_user.is_admin %}
-        <a class="button primary" href="{{ url_for('main.upload') }}">Upload file tồn mới</a>
-      {% endif %}
-    {% else %}
-      <a class="button primary" href="{{ url_for('auth.login') }}">Đăng nhập hệ thống</a>
     {% endif %}
-    {% if batch %}<a class="button secondary" href="{{ url_for('main.export_xlsx') }}">Xuất Excel</a>{% endif %}
   </div>
 </div>
 
@@ -213,37 +218,28 @@
   </div>
 </dialog>
 
-<!-- Modal Đổi Mật Khẩu -->
-<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content shadow">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="changePasswordModalLabel"><i class="fas fa-key me-2"></i> Đổi mật khẩu tài khoản</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ url_for('main.change_password') }}" method="POST">
-                <div class="modal-body text-start">
-                    <div class="mb-3">
-                        <label for="old_password" class="form-label">Mật khẩu hiện tại</label>
-                        <input type="password" class="form-control" id="old_password" name="old_password" required placeholder="Nhập mật khẩu cũ...">
-                    </div>
-                    <div class="mb-3">
-                        <label for="new_password" class="form-label">Mật khẩu mới</label>
-                        <input type="password" class="form-control" id="new_password" name="new_password" required placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)...">
-                    </div>
-                    <div class="mb-3">
-                        <label for="confirm_password" class="form-label">Xác nhận mật khẩu mới</label>
-                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required placeholder="Nhập lại mật khẩu mới...">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
-                </div>
-            </form>
-        </div>
+<!-- Modal Đổi Mật Khẩu (Dùng thẻ dialog chuẩn giao diện hệ thống để không bị lỗi CSS và không tự động hiện) -->
+<dialog class="reason-modal" id="changePasswordModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div>
+        <p class="eyebrow">BẢO MẬT TÀI KHOẢN</p>
+        <h2>Đổi mật khẩu</h2>
+        <p>Cập nhật mật khẩu mới cho tài khoản của bạn</p>
+      </div>
+      <button class="modal-close" type="button" id="closePasswordModal">Đóng</button>
     </div>
-</div>
+    <form class="modal-form" action="{{ url_for('main.change_password') }}" method="POST">
+      <label for="new_password">Mật khẩu mới</label>
+      <input type="password" id="new_password" name="new_password" required placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)..." style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 4px; margin-bottom: 14px; font: inherit;">
+      
+      <label for="confirm_password">Xác nhận mật khẩu mới</label>
+      <input type="password" id="confirm_password" name="confirm_password" required placeholder="Nhập lại mật khẩu mới..." style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 4px; margin-bottom: 14px; font: inherit;">
+
+      <button class="save-button" type="submit">Lưu thay đổi</button>
+    </form>
+  </div>
+</dialog>
 
 {% else %}
 <section class="empty panel">
@@ -277,6 +273,25 @@
       dropdown.style.display = 'none';
     }
   });
+
+  // Xử lý mở/đóng modal Đổi mật khẩu chuẩn Dialog
+  var changePasswordModal = document.getElementById('changePasswordModal');
+  var openPasswordBtn = document.getElementById('openChangePasswordBtn');
+  var closePasswordBtn = document.getElementById('closePasswordModal');
+
+  if (openPasswordBtn && changePasswordModal) {
+    openPasswordBtn.addEventListener('click', function() {
+      var dropdown = document.getElementById('userMenuDropdownContent');
+      if (dropdown) dropdown.style.display = 'none';
+      changePasswordModal.showModal();
+    });
+  }
+
+  if (closePasswordBtn && changePasswordModal) {
+    closePasswordBtn.addEventListener('click', function() {
+      changePasswordModal.close();
+    });
+  }
 
   document.querySelectorAll('[data-modal]').forEach(function(button){
     button.addEventListener('click', function(e){
@@ -324,7 +339,9 @@
   var imageRotation = 0;
 
   function renderImage(){
-    viewerImage.style.transform = 'scale(' + imageScale + ') rotate(' + imageRotation + 'deg)';
+    if(viewerImage) {
+      viewerImage.style.transform = 'scale(' + imageScale + ') rotate(' + imageRotation + 'deg)';
+    }
   }
 
   document.querySelectorAll('.thumbnail-button').forEach(function(button){
@@ -332,10 +349,11 @@
       var activeImage = button.dataset.imageUrl;
       imageScale = 1;
       imageRotation = 0;
-      viewerImage.src = activeImage;
-      document.getElementById('viewer-name').textContent = button.dataset.imageName;
+      if(viewerImage) viewerImage.src = activeImage;
+      var viewerName = document.getElementById('viewer-name');
+      if(viewerName) viewerName.textContent = button.dataset.imageName;
       renderImage();
-      imageModal.showModal();
+      if(imageModal) imageModal.showModal();
     });
   });
 
@@ -352,7 +370,7 @@
   });
 
   document.querySelector('[data-close-image]')?.addEventListener('click', function(){
-    imageModal.close();
+    if(imageModal) imageModal.close();
   });
 })();
 </script>
