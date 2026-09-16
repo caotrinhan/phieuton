@@ -53,6 +53,15 @@
         }
       });
     });
+    document.querySelectorAll('.summary-panel tbody tr:not(.summary-total)').forEach(function(row) {
+      var cells = row.querySelectorAll('td');
+      var rate = parseFloat((cells[cells.length - 1] || {}).textContent);
+      row.classList.add(rate === 100 ? 'row-success' : 'row-danger');
+    });
+    document.querySelectorAll('.detail-table tbody tr').forEach(function(row) {
+      var reason = row.querySelector('.reason-preview');
+      if (reason) row.classList.add(reason.textContent.indexOf('Chưa xác minh') >= 0 ? 'row-danger' : 'row-success');
+    });
   </script>
 </body>
 </html>
