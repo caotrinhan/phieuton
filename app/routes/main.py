@@ -34,20 +34,13 @@ def _get_allowed_units() -> list:
     
     user_unit = (current_user.unit or "").strip()
     
-    # Truy vấn trực tiếp từ DB với điều kiện bọc trim() để tránh lỗi khoảng trắng hoặc lệch collation
+    # Sử dụng LOWER và TRIM ở cả 2 vế trong SQL để loại bỏ hoàn toàn lỗi lệch khoảng trắng hoặc hoa/thường
     mappings = TrungTamMapping.query.filter(
-        db.func.trim(TrungTamMapping.trung_tam_quan_ly) == user_unit
+        db.func.lower(db.func.trim(TrungTamMapping.trung_tam_quan_ly)) == user_unit.lower()
     ).all()
     
     allowed = [m.to_ky_thuat for m in mappings]
     
-    # Nếu vẫn trống, thử truy vấn không phân biệt hoa thường hoặc in hoa toàn bộ trong SQL
-    if not allowed:
-        mappings_ci = TrungTamMapping.query.filter(
-            db.func.lower(db.func.trim(TrungTamMapping.trung_tam_quan_ly)) == user_unit.lower()
-        ).all()
-        allowed = [m.to_ky_thuat for m in mappings_ci]
-
     # Nếu chưa cấu hình mapping, mặc định lấy chính unit của user
     if not allowed:
         allowed = [current_user.unit]
@@ -127,6 +120,10 @@ def ticket_detail(ticket_id: int):
 @main_bp.route("/upload", methods=["GET", "POST"])
 @login_required
 def upload():
+    # Kiểm tra nếu không phải admin thì chặn lại và thông báo lỗi
+    if not current_user.is_admin:
+        flash("Bạn không có quyền thực hiện chức năng upload file.", "error")
+        return redirect(url_for("main.dashboard"))
     if request.method == "POST":
         ca_mau_file = request.files.get("ca_mau")
         bac_lieu_file = request.files.get("bac_lieu")

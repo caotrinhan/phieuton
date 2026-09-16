@@ -7,11 +7,11 @@
     <p>{% if batch %}Dữ liệu được cập nhật lúc {{ batch.uploaded_at.strftime('%d/%m/%Y %H:%M:%S') }}; Người cập nhật: {{ batch.uploaded_by.full_name }}{% else %}Chưa có dữ liệu{% endif %}</p>
   </div>
   <div class="heading-actions">
-    {% if current_user.is_authenticated %}
-      <a class="button primary" href="{{ url_for('main.upload') }}">Upload batch mới</a>
-    {% else %}
-      <a class="button primary" href="{{ url_for('auth.login') }}">Đăng nhập hệ thống</a>
-    {% endif %}
+    {% if current_user.is_authenticated and current_user.is_admin %}
+<a href="{{ url_for('main.upload') }}" class="btn btn-primary">
+    <i class="fas fa-upload"></i> Upload file tồn
+</a>
+{% endif %}
     {% if batch %}<a class="button secondary" href="{{ url_for('main.export_xlsx') }}">Xuất Excel</a>{% endif %}
   </div>
 </div>
