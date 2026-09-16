@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Upload dữ liệu | Tồn lắp đặt{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">DAILY INGESTION</p><h1>Upload dữ liệu ngày</h1><p>Chọn đúng file Cà Mau và Bạc Liêu. Hệ thống sẽ lọc các phiếu quá 48 giờ và tạo một batch mới.</p></div></div>
+<form class="panel upload-form" method="post" enctype="multipart/form-data">
+  <label><span>File Cà Mau</span><input type="file" name="ca_mau" accept=".xlsx,.xls" required><small>Mẫu 9.KS01...</small></label>
+  <label><span>File Bạc Liêu</span><input type="file" name="bac_lieu" accept=".xlsx,.xls" required><small>Mẫu 63.BLU...</small></label>
+  <button class="button primary" type="submit">Xử lý và lưu batch</button>
+</form>
+{% endblock %}

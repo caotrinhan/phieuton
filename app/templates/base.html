@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}VNPT CÀ MAU | Giám sát phiếu tồn băng rộng cố định{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Noto+Serif:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  {% if current_user.is_authenticated %}
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('main.dashboard') }}">VNPT CÀ MAU <span>GIÁM SÁT PHIẾU TỒN</span></a>
+    <nav>
+      <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+      <a href="{{ url_for('main.upload') }}">Upload dữ liệu</a>
+      {% if current_user.is_admin %}<a href="{{ url_for('main.users') }}">Người dùng</a>{% endif %}
+      <a href="{{ url_for('auth.logout') }}">Đăng xuất</a>
+    </nav>
+  </header>
+  {% endif %}
+  <main class="page">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">
+    <strong>VNPT CÀ MAU - HỆ THỐNG GIÁM SÁT PHIẾU TỒN BĂNG RỘNG CỐ ĐỊNH</strong>
+    <span>Phát triển 09/2026 · Đơn vị: Phòng Kỹ thuật - đầu tư · Hỗ trợ: Cao Minh Nhựt - 079.5252.863</span>
+  </footer>
+</body>
+</html>

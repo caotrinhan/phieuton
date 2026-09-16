@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block title %}Người dùng | VNPT CÀ MAU{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">ACCESS CONTROL</p><h1>Người dùng</h1><p>Quản lý tài khoản được phép truy cập và cập nhật xác minh.</p></div></div>
+<div class="two-col"><form class="panel" method="post"><h2>Tạo tài khoản</h2><label>Email<input type="email" name="email" required></label><label>Họ tên<input name="full_name" required></label><label>Đơn vị<input name="unit" required></label><label>Số điện thoại<input name="phone"></label><label>Mật khẩu<input type="password" name="password" required></label><label class="check"><input type="checkbox" name="is_admin"> Quyền quản trị</label><button class="button primary" type="submit">Tạo người dùng</button></form><section class="panel"><h2>Danh sách</h2><table><thead><tr><th>Họ tên</th><th>Email</th><th>Đơn vị</th><th>Vai trò</th></tr></thead><tbody>{% for user in users %}<tr><td>{{ user.full_name }}</td><td>{{ user.email }}</td><td>{{ user.unit }}</td><td>{{ 'Admin' if user.is_admin else 'Người dùng' }}</td></tr>{% endfor %}</tbody></table></section></div>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Đăng nhập | VNPT CÀ MAU{% endblock %}
+{% block content %}
+<section class="login-shell">
+  <div class="login-intro"><p class="eyebrow">VNPT CÀ MAU · 09/2026</p><h1>Giám sát phiếu tồn băng rộng cố định.</h1><p>Upload dữ liệu mỗi ngày, theo dõi phiếu quá 48 giờ và xác minh theo đơn vị.</p></div>
+  <form class="panel login-form" method="post">
+    <h2>Đăng nhập</h2>
+    <label>Tài khoản<input type="text" name="email" required autofocus autocomplete="username"></label>
+    <label>Mật khẩu<input type="password" name="password" required></label>
+    <button class="button primary" type="submit">Vào hệ thống</button>
+  </form>
+</section>
+{% endblock %}
