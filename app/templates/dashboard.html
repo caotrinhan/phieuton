@@ -10,41 +10,41 @@
     {% if current_user.is_authenticated %}
       {% if current_user.is_admin %}
         <a class="button primary" href="{{ url_for('main.upload') }}">Upload file tồn mới</a>
-     <button type="button" class="button secondary" id="openAdminResetBtn">
-            Reset mật khẩu user
+        <button type="button" class="button secondary" id="openAdminResetBtn">
+          Reset mật khẩu user
         </button>
 
-<!-- Chuyển sang dùng thẻ <dialog> chuẩn giao diện hệ thống -->
-<dialog class="reason-modal" id="adminResetModal">
-  <div class="modal-card">
-    <form method="POST" action="{{ url_for('main.admin_reset_password_user') }}">
-      <div class="modal-header">
-        <div>
-          <p class="eyebrow">QUẢN TRỊ HỆ THỐNG</p>
-          <h2>Reset mật khẩu người dùng</h2>
-          <p>Chọn hoặc tìm kiếm tài khoản cần cấp lại mật khẩu</p>
-        </div>
-        <button class="modal-close" type="button" id="closeAdminResetBtn">Đóng</button>
-      </div>
-      
-      <div class="modal-form" style="padding-top: 10px;">
-        <label for="target_email">Chọn hoặc nhập Email / Username người dùng:</label>
-        <input class="form-control" list="userListOptions" id="target_email" name="target_email" placeholder="Nhập email tài khoản..." required autocomplete="off" style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 4px; margin-bottom: 14px; font: inherit;">
-        <datalist id="userListOptions">
-          {% for u in all_users %}
-            <option value="{{ u.email }}">{{ u.full_name }} ({{ u.unit }})</option>
-          {% endfor %}
-        </datalist>
+        <!-- Modal Quản trị: Reset mật khẩu người dùng (Chuẩn thẻ dialog) -->
+        <dialog class="reason-modal" id="adminResetModal">
+          <div class="modal-card">
+            <form method="POST" action="{{ url_for('main.admin_reset_password_user') }}">
+              <div class="modal-header">
+                <div>
+                  <p class="eyebrow">QUẢN TRỊ HỆ THỐNG</p>
+                  <h2>Reset mật khẩu người dùng</h2>
+                  <p>Chọn hoặc tìm kiếm tài khoản cần cấp lại mật khẩu</p>
+                </div>
+                <button class="modal-close" type="button" id="closeAdminResetBtn">Đóng</button>
+              </div>
+              
+              <div class="modal-form" style="padding-top: 10px;">
+                <label for="target_email">Chọn hoặc nhập Email / Username người dùng:</label>
+                <input class="form-control" list="userListOptions" id="target_email" name="target_email" placeholder="Nhập email tài khoản..." required autocomplete="off" style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 4px; margin-bottom: 14px; font: inherit;">
+                <datalist id="userListOptions">
+                  {% for u in all_users %}
+                    <option value="{{ u.email }}">{{ u.full_name }} ({{ u.unit }})</option>
+                  {% endfor %}
+                </datalist>
 
-        <div class="alert alert-info py-2 small mb-0" style="background: #f5f7f4; padding: 10px; border-radius: 4px; margin-bottom: 16px; font-size: 13px; color: var(--ink);">
-          Hành động này sẽ đưa mật khẩu của tài khoản được chọn về giá trị mặc định là: <strong>1</strong>
-        </div>
+                <div class="alert alert-info py-2 small mb-0" style="background: #f5f7f4; padding: 10px; border-radius: 4px; margin-bottom: 16px; font-size: 13px; color: var(--ink);">
+                  Hành động này sẽ đưa mật khẩu của tài khoản được chọn về giá trị mặc định là: <strong>1</strong>
+                </div>
 
-        <button class="save-button" type="submit" onclick="return confirm('Bạn có chắc chắn muốn reset mật khẩu tài khoản này về 1?');" style="width: 100%; margin-top: 5px;">Xác nhận Reset</button>
-      </div>
-    </form>
-  </div>
-</dialog>
+                <button class="save-button" type="submit" onclick="return confirm('Bạn có chắc chắn muốn reset mật khẩu tài khoản này về 1?');" style="width: 100%; margin-top: 5px;">Xác nhận Reset</button>
+              </div>
+            </form>
+          </div>
+        </dialog>
       {% endif %}
     {% else %}
       <a class="button primary" href="{{ url_for('auth.login') }}">Đăng nhập hệ thống</a>
@@ -58,11 +58,10 @@
       <!-- Menu tài khoản thuần CSS tích hợp sẵn nằm ở cùng bên phải -->
       <div class="user-menu-dropdown" style="position: relative; display: inline-block;">
         <button class="button secondary user-menu-btn" type="button" id="userMenuToggle" style="background: #fff; display: flex; align-items: center; gap: 6px;">
-          <span>{{ current_user.full_name or current_user.email }}</span>
+          <span>Tài khoản</span>
           <i class="fas fa-chevron-down" style="font-size: 10px;"></i>
         </button>
         <div id="userMenuDropdownContent" style="display: none; position: absolute; right: 0; top: 105%; background: #fff; border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0,0,0,0.12); border-radius: 4px; min-width: 180px; z-index: 1000; padding: 6px 0;">
-       
           <button type="button" id="openChangePasswordBtn" style="width: 100%; text-align: left; background: none; border: none; padding: 10px 16px; font: 13px Arial,sans-serif; cursor: pointer; color: var(--ink); display: flex; align-items: center; gap: 8px;" onmouseover="this.style.background='#f5f7f4'" onmouseout="this.style.background='transparent'">
             <i class="fas fa-key" style="color: var(--green);"></i> Đổi mật khẩu
           </button>
@@ -254,7 +253,7 @@
   </div>
 </dialog>
 
-<!-- Modal Đổi Mật Khẩu (Dùng thẻ dialog chuẩn giao diện hệ thống để không bị lỗi CSS và không tự động hiện) -->
+<!-- Modal Đổi Mật Khẩu (Chuẩn thẻ dialog) -->
 <dialog class="reason-modal" id="changePasswordModal">
   <div class="modal-card">
     <div class="modal-header">
@@ -267,7 +266,7 @@
     </div>
     <form class="modal-form" action="{{ url_for('main.change_password') }}" method="POST">
       <label for="new_password">Mật khẩu mới</label>
-      <input type="password" id="new_password" name="new_password" required placeholder="Nhập mật khẩu mới ..." style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 4px; margin-bottom: 14px; font: inherit;">
+      <input type="password" id="new_password" name="new_password" required placeholder="Nhập mật khẩu mới..." style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 4px; margin-bottom: 14px; font: inherit;">
       
       <label for="confirm_password">Xác nhận mật khẩu mới</label>
       <input type="password" id="confirm_password" name="confirm_password" required placeholder="Nhập lại mật khẩu mới..." style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 4px; margin-bottom: 14px; font: inherit;">
@@ -329,19 +328,26 @@
     });
   }
 
+  // Xử lý mở modal cập nhật phiếu hoặc thông báo xác nhận khi chưa đăng nhập
   document.querySelectorAll('[data-modal]').forEach(function(button){
     button.addEventListener('click', function(e){
       e.preventDefault();
+      
       if (!isAuthenticated) {
-        window.location.href = "{{ url_for('auth.login', next=request.path) }}";
+        var userConfirmed = confirm('Bạn cần đăng nhập hệ thống để có thể nhập lý do tồn hoặc upload hình ảnh minh họa.\n\nBạn có muốn chuyển đến trang đăng nhập ngay bây giờ không?');
+        if (userConfirmed) {
+          window.location.href = "{{ url_for('auth.login', next=request.path) }}";
+        }
         return;
       }
+
       var ticketUnit = button.getAttribute('data-ticket-unit');
       var hasPermission = isAdmin || allowedUnits.includes(ticketUnit);
       if (!hasPermission) {
         alert('Đơn vị của bạn không quản lý tổ kỹ thuật này (' + ticketUnit + '). Bạn không thể cập nhật phiếu này.');
         return;
       }
+
       var modalId = button.dataset.modal;
       var modal = document.getElementById(modalId);
       if (modal) {
@@ -408,8 +414,8 @@
   document.querySelector('[data-close-image]')?.addEventListener('click', function(){
     if(imageModal) imageModal.close();
   });
-})();
-// Xử lý mở/đóng modal Reset mật khẩu Admin (Dùng thẻ dialog)
+
+  // Xử lý mở/đóng modal Reset mật khẩu Admin (Dùng thẻ dialog)
   var adminResetModal = document.getElementById('adminResetModal');
   var openAdminResetBtn = document.getElementById('openAdminResetBtn');
   var closeAdminResetBtn = document.getElementById('closeAdminResetBtn');
@@ -425,5 +431,6 @@
       adminResetModal.close();
     });
   }
+})();
 </script>
 {% endblock %}
