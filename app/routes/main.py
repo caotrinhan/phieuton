@@ -44,17 +44,15 @@ def _get_allowed_units() -> list:
 def dashboard():
     batch = UploadBatch.query.order_by(UploadBatch.uploaded_at.desc()).first()
     
+    # Lấy toàn bộ tất cả các phiếu tồn không phân biệt đơn vị để hiển thị chung cho mọi người dùng
     ticket_query = Ticket.query.filter_by(status=Ticket.STATUS_WAITING)
-    if not current_user.is_admin:
-        allowed_units = _get_allowed_units()
-        ticket_query = ticket_query.filter(Ticket.unit.in_(allowed_units))
-        
     tickets = (
         ticket_query.order_by(Ticket.unit, Ticket.age_hours.desc())
         .all()
         if batch
         else []
     )
+    
     units = {}
     for ticket in tickets:
         item = units.setdefault(ticket.unit, {"total": 0, "fiber": 0, "mytv": 0, "mesh": 0, "camera": 0, "reported": 0})
@@ -69,6 +67,7 @@ def dashboard():
         elif "camera" in equipment:
             item["camera"] += 1
         item["reported"] += bool(ticket.reason and ticket.reason.strip())
+        
     summary_rows = [{"stt": index, "unit": unit, **item} for index, (unit, item) in enumerate(units.items(), 1)]
     summary_total = {
         "total": sum(row["total"] for row in summary_rows),
@@ -78,7 +77,16 @@ def dashboard():
         "camera": sum(row["camera"] for row in summary_rows),
         "reported": sum(row["reported"] for row in summary_rows),
     }
-    return render_template("dashboard.html", batch=batch, tickets=tickets, units=units, summary_rows=summary_rows, summary_total=summary_total)
+    
+    return render_template(
+        "dashboard.html", 
+        batch=batch, 
+        tickets=tickets, 
+        units=units, 
+        summary_rows=summary_rows, 
+        summary_total=summary_total,
+        _get_allowed_units=_get_allowed_units
+    )
 
 
 @main_bp.route("/upload", methods=["GET", "POST"])
@@ -231,12 +239,10 @@ def export_xlsx():
         flash("Chưa có dữ liệu để xuất.", "error")
         return redirect(url_for("main.dashboard"))
         
+    # Xuất toàn bộ danh sách phiếu hiện có
     ticket_query = Ticket.query.filter_by(status=Ticket.STATUS_WAITING)
-    if not current_user.is_admin:
-        allowed_units = _get_allowed_units()
-        ticket_query = ticket_query.filter(Ticket.unit.in_(allowed_units))
-        
     tickets = ticket_query.order_by(Ticket.unit, Ticket.age_hours.desc()).all()
+    
     detail = pd.DataFrame([
         {
             "STT": index,

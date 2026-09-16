@@ -6,19 +6,22 @@
   <title>{% block title %}VNPT CÀ MAU | Giám sát phiếu tồn băng rộng cố định{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   {% if current_user.is_authenticated %}
   <header class="topbar">
     <a class="brand" href="{{ url_for('main.dashboard') }}">VNPT CÀ MAU <span>GIÁM SÁT PHIẾU TỒN</span></a>
-    <nav>
+    <nav class="nav-links">
       <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
       <a href="{{ url_for('main.upload') }}">Upload dữ liệu</a>
       {% if current_user.is_admin %}<a href="{{ url_for('main.users') }}">Người dùng</a>{% endif %}
-      <a href="{{ url_for('auth.logout') }}">Đăng xuất</a>
     </nav>
+    <div class="user-info-bar" style="margin-left: auto; display: flex; align-items: center; gap: 15px; color: #fff; font-size: 14px;">
+      <span><strong>{{ current_user.full_name }}</strong> ({{ current_user.email }} - <em>{{ current_user.unit }}</em>)</span>
+      <a href="{{ url_for('auth.logout') }}" class="button-logout" style="background: #d9534f; color: white; padding: 5px 10px; border-radius: 4px; text-decoration: none;">Đăng xuất</a>
+    </div>
   </header>
   {% endif %}
   <main class="page">
