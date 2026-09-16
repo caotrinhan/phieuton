@@ -1,5 +1,7 @@
 # Hệ thống giám sát phiếu tồn lắp đặt >48 giờ
 
+Tài liệu vận hành và phát triển chi tiết: [HUONG_DAN_VAN_HANH.md](HUONG_DAN_VAN_HANH.md)
+
 Ứng dụng Flask đọc hai file Excel Cà Mau/Bạc Liêu, lọc phiếu `THOIGIAN_TON > 48`, lưu vào MySQL database `phieuton`, theo dõi trạng thái xuyên các lần upload, nhập lý do và xuất Excel.
 
 ## 1. Lưu ý port
