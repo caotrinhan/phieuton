@@ -32,5 +32,24 @@
     <span>Phát triển 09/2026 · Đơn vị: Phòng Kỹ thuật - đầu tư · Hỗ trợ: Cao Minh Nhựt - 079.5252.863</span>
   </footer>
   {% block scripts %}{% endblock %}
+  <script>
+    document.querySelectorAll('.detail-table').forEach(function(table) {
+      var reasonHeader = table.querySelector('thead th:nth-child(8)');
+      if (reasonHeader) {
+        reasonHeader.innerHTML = 'Lý do tồn<br><small>(người dùng · ngày giờ cập nhật)</small>';
+      }
+      table.querySelectorAll('tbody tr').forEach(function(row) {
+        var cells = row.querySelectorAll('td');
+        var reasonCell = cells[7];
+        var updatedCell = row.querySelector('.updated');
+        if (reasonCell && updatedCell && updatedCell.textContent.trim() !== 'Chưa cập nhật') {
+          var meta = document.createElement('small');
+          meta.className = 'reason-meta';
+          meta.textContent = '(' + updatedCell.textContent.replace(/\s+/g, ' ').trim() + ')';
+          reasonCell.appendChild(meta);
+        }
+      });
+    });
+  </script>
 </body>
 </html>
