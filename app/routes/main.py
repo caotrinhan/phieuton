@@ -7,7 +7,7 @@ import pandas as pd
 from flask import Blueprint, current_app, flash, redirect, render_template, request, send_file, send_from_directory, url_for
 from flask_login import current_user, login_required
 from ..extensions import db
-from ..models import ReasonAudit, Ticket, TicketImage, UploadBatch, User
+from ..models import ReasonAudit, Ticket, TicketImage, UploadBatch, User, LoginLog, TrungTamMapping
 from ..services.import_service import load_filtered_tickets
 from ..time_utils import local_now
 
@@ -27,13 +27,30 @@ def _image_allowed(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in {"jpg", "jpeg", "png", "webp"}
 
 
+def _get_allowed_units() -> list:
+    """Hỗ trợ lấy danh sách các tổ kỹ thuật thuộc quyền quản lý của user hiện tại"""
+    if current_user.is_admin:
+        return []
+    mappings = TrungTamMapping.query.filter_by(trung_tam_quan_ly=current_user.unit).all()
+    allowed = [m.to_ky_thuat for m in mappings]
+    # Nếu chưa cấu hình mapping, mặc định lấy chính unit của user
+    if not allowed:
+        allowed = [current_user.unit]
+    return allowed
+
+
 @main_bp.get("/")
 @login_required
 def dashboard():
     batch = UploadBatch.query.order_by(UploadBatch.uploaded_at.desc()).first()
+    
+    ticket_query = Ticket.query.filter_by(status=Ticket.STATUS_WAITING)
+    if not current_user.is_admin:
+        allowed_units = _get_allowed_units()
+        ticket_query = ticket_query.filter(Ticket.unit.in_(allowed_units))
+        
     tickets = (
-        Ticket.query.filter_by(status=Ticket.STATUS_WAITING)
-        .order_by(Ticket.unit, Ticket.age_hours.desc())
+        ticket_query.order_by(Ticket.unit, Ticket.age_hours.desc())
         .all()
         if batch
         else []
@@ -155,6 +172,14 @@ def upload():
 @login_required
 def update_reason(ticket_id: int):
     ticket = db.get_or_404(Ticket, ticket_id)
+    
+    # Kiểm tra phân quyền cập nhật theo nhóm tổ kỹ thuật
+    if not current_user.is_admin:
+        allowed_units = _get_allowed_units()
+        if ticket.unit not in allowed_units:
+            flash("Bạn không có quyền cập nhật phiếu của đơn vị khác.", "error")
+            return redirect(url_for("main.dashboard"))
+
     reason = request.form.get("reason", "").strip()
     now = _now()
     image_files = request.files.getlist("images")
@@ -205,7 +230,13 @@ def export_xlsx():
     if not batch:
         flash("Chưa có dữ liệu để xuất.", "error")
         return redirect(url_for("main.dashboard"))
-    tickets = Ticket.query.filter_by(status=Ticket.STATUS_WAITING).order_by(Ticket.unit, Ticket.age_hours.desc()).all()
+        
+    ticket_query = Ticket.query.filter_by(status=Ticket.STATUS_WAITING)
+    if not current_user.is_admin:
+        allowed_units = _get_allowed_units()
+        ticket_query = ticket_query.filter(Ticket.unit.in_(allowed_units))
+        
+    tickets = ticket_query.order_by(Ticket.unit, Ticket.age_hours.desc()).all()
     detail = pd.DataFrame([
         {
             "STT": index,
@@ -266,3 +297,13 @@ def create_user():
     db.session.commit()
     flash("Đã tạo người dùng.", "success")
     return redirect(url_for("main.users"))
+
+
+@main_bp.get("/login-logs")
+@login_required
+def login_logs():
+    if not current_user.is_admin:
+        flash("Bạn không có quyền xem lịch sử đăng nhập.", "error")
+        return redirect(url_for("main.dashboard"))
+    logs = LoginLog.query.order_by(LoginLog.logged_at.desc()).limit(150).all()
+    return render_template("login_logs.html", logs=logs)

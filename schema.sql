@@ -17,6 +17,27 @@ CREATE TABLE IF NOT EXISTS users (
 	created_at DATETIME NOT NULL
 );
 
+-- Bảng ghi nhận lịch sử đăng nhập và IP
+CREATE TABLE IF NOT EXISTS login_logs (
+	id INT PRIMARY KEY AUTO_INCREMENT,
+	user_id INT,
+	email_attempt VARCHAR(190) NOT NULL,
+	ip_address VARCHAR(50) NOT NULL,
+	status VARCHAR(30) NOT NULL,
+	logged_at DATETIME NOT NULL,
+	CONSTRAINT fk_login_log_user FOREIGN KEY (user_id) REFERENCES users(id),
+	INDEX ix_login_logs_at (logged_at)
+);
+
+-- Bảng ánh xạ Trung tâm cấp 2 với các Tổ kỹ thuật cấp 3
+CREATE TABLE IF NOT EXISTS trung_tam_mappings (
+	id INT PRIMARY KEY AUTO_INCREMENT,
+	trung_tam_quan_ly VARCHAR(150) NOT NULL,
+	to_ky_thuat VARCHAR(150) NOT NULL UNIQUE,
+	INDEX ix_tt_quan_ly (trung_tam_quan_ly),
+	INDEX ix_to_kt (to_ky_thuat)
+);
+
 CREATE TABLE IF NOT EXISTS upload_batches (
 	id INT PRIMARY KEY AUTO_INCREMENT,
 	uploaded_at DATETIME NOT NULL,

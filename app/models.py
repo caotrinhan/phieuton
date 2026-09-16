@@ -27,6 +27,27 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
 
+class LoginLog(db.Model):
+    __tablename__ = "login_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    email_attempt = db.Column(db.String(190), nullable=False)
+    ip_address = db.Column(db.String(50), nullable=False)
+    status = db.Column(db.String(30), nullable=False)  # "SUCCESS" hoặc "FAILED"
+    logged_at = db.Column(db.DateTime, default=local_now, nullable=False, index=True)
+
+    user = db.relationship("User", backref="login_logs")
+
+
+class TrungTamMapping(db.Model):
+    __tablename__ = "trung_tam_mappings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    trung_tam_quan_ly = db.Column(db.String(150), nullable=False, index=True)  # Tên trung tâm của User (Ví dụ: "TTVT Cà Mau")
+    to_ky_thuat = db.Column(db.String(150), nullable=False, unique=True, index=True)  # Tên tổ kỹ thuật trong file phiếu (Ví dụ: "Tổ KT Phường 1")
+
+
 class UploadBatch(db.Model):
     __tablename__ = "upload_batches"
 
