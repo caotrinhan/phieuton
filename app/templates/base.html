@@ -33,6 +33,9 @@
   </footer>
   {% block scripts %}{% endblock %}
   <script>
+    document.querySelectorAll('.detail-panel').forEach(function(panel) {
+      if (!panel.querySelector('.panel-help')) panel.remove();
+    });
     document.querySelectorAll('.detail-table').forEach(function(table) {
       var reasonHeader = table.querySelector('thead th:nth-child(8)');
       if (reasonHeader) {
