@@ -10,6 +10,41 @@
     {% if current_user.is_authenticated %}
       {% if current_user.is_admin %}
         <a class="button primary" href="{{ url_for('main.upload') }}">Upload file tồn mới</a>
+        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#adminResetModal">
+    Reset mật khẩu user
+</button>
+<!-- Modal Nhập Username/Email và Reset về 1 -->
+<div class="modal fade" id="adminResetModal" tabindex="-1" aria-labelledby="adminResetModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form action="{{ url_for('main.admin_reset_password_user') }}" method="POST">
+        <div class="modal-header">
+          <h5 class="modal-title" id="adminResetModalLabel">Admin: Reset mật khẩu người dùng</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="target_email" class="form-label">Chọn hoặc nhập Email / Username người dùng:</label>
+            <!-- Sử dụngdatalist để Admin vừa có thể chọn nhanh vừa có thể gõ tìm kiếm -->
+            <input class="form-control" list="userListOptions" id="target_email" name="target_email" placeholder="Nhập email tài khoản..." required autocomplete="off">
+            <datalist id="userListOptions">
+              {% for u in all_users %}
+                <option value="{{ u.email }}">{{ u.full_name }} ({{ u.unit }})</option>
+              {% endfor %}
+            </datalist>
+          </div>
+          <div class="alert alert-info py-2 small mb-0">
+            Hành động này sẽ đưa mật khẩu của tài khoản được chọn về giá trị mặc định là: <strong>1</strong>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-danger" onclick="return confirm('Bạn có chắc chắn muốn reset mật khẩu tài khoản này về 1?');">Xác nhận Reset</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
       {% endif %}
     {% else %}
       <a class="button primary" href="{{ url_for('auth.login') }}">Đăng nhập hệ thống</a>
@@ -27,6 +62,7 @@
           <i class="fas fa-chevron-down" style="font-size: 10px;"></i>
         </button>
         <div id="userMenuDropdownContent" style="display: none; position: absolute; right: 0; top: 105%; background: #fff; border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0,0,0,0.12); border-radius: 4px; min-width: 180px; z-index: 1000; padding: 6px 0;">
+       
           <button type="button" id="openChangePasswordBtn" style="width: 100%; text-align: left; background: none; border: none; padding: 10px 16px; font: 13px Arial,sans-serif; cursor: pointer; color: var(--ink); display: flex; align-items: center; gap: 8px;" onmouseover="this.style.background='#f5f7f4'" onmouseout="this.style.background='transparent'">
             <i class="fas fa-key" style="color: var(--green);"></i> Đổi mật khẩu
           </button>

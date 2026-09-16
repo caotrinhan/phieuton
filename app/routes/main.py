@@ -84,6 +84,9 @@ def dashboard():
     }
     
     allowed_units = _get_allowed_units() if current_user.is_authenticated else []
+    
+    # Lấy danh sách users phục vụ cho tính năng Admin chọn/reset mật khẩu trực tiếp trên Dashboard nếu cần
+    all_users = User.query.order_by(User.full_name).all() if (current_user.is_authenticated and current_user.is_admin) else []
 
     return render_template(
         "dashboard.html", 
@@ -92,21 +95,17 @@ def dashboard():
         units=units, 
         summary_rows=summary_rows, 
         summary_total=summary_total,
-        allowed_units=allowed_units
+        allowed_units=allowed_units,
+        all_users=all_users
     )
 
 
 @main_bp.post("/change-password")
 @login_required
 def change_password():
-    """Xử lý đổi mật khẩu ngay từ giao diện Modal trên Dashboard"""
-    old_password = request.form.get("old_password", "")
+    """Xử lý đổi mật khẩu cá nhân (Bỏ qua mật khẩu cũ theo yêu cầu cập nhật giao diện)"""
     new_password = request.form.get("new_password", "")
     confirm_password = request.form.get("confirm_password", "")
-
-    if not current_user.check_password(old_password):
-        flash("Mật khẩu hiện tại không chính xác.", "error")
-        return redirect(url_for("main.dashboard"))
 
     if new_password != confirm_password:
         flash("Mật khẩu mới và xác nhận mật khẩu không khớp.", "error")
@@ -116,10 +115,37 @@ def change_password():
         flash("Mật khẩu mới phải có ít nhất 6 ký tự.", "error")
         return redirect(url_for("main.dashboard"))
 
+    # Dùng hàm set_password của Model User để mã hóa chuẩn Hash trong DB
     current_user.set_password(new_password)
     db.session.commit()
     
     flash("Đổi mật khẩu thành công!", "success")
+    return redirect(url_for("main.dashboard"))
+
+
+@main_bp.post("/admin/reset-password-user")
+@login_required
+def admin_reset_password_user():
+    """Tính năng dành cho Admin: reset mật khẩu của một người dùng bất kỳ về '1'"""
+    if not current_user.is_admin:
+        flash("Bạn không có quyền thực hiện thao tác này.", "error")
+        return redirect(url_for("main.dashboard"))
+        
+    target_email = request.form.get("target_email", "").strip().lower()
+    if not target_email:
+        flash("Vui lòng cung cấp email/username người dùng cần reset.", "error")
+        return redirect(url_for("main.dashboard"))
+        
+    user_to_reset = User.query.filter_by(email=target_email).first()
+    if not user_to_reset:
+        flash(f"Không tìm thấy người dùng với email/username: {target_email}", "error")
+        return redirect(url_for("main.dashboard"))
+        
+    # Reset mật khẩu về "1" bằng phương thức mã hóa hash của model
+    user_to_reset.set_password("1")
+    db.session.commit()
+    
+    flash(f"Đã reset thành công mật khẩu của tài khoản {target_email} về '1'.", "success")
     return redirect(url_for("main.dashboard"))
 
 
