@@ -6,33 +6,31 @@
     <h1>Phiếu tồn trên 48 giờ</h1>
     <p>{% if batch %}Dữ liệu được cập nhật lúc {{ batch.uploaded_at.strftime('%d/%m/%Y %H:%M:%S') }}; Người cập nhật: {{ batch.uploaded_by.full_name }}{% else %}Chưa có dữ liệu{% endif %}</p>
   </div>
-  <div class="heading-actions">
+  <div class="heading-actions" style="align-items: center;">
     {% if current_user.is_authenticated %}
-  <!-- Dropdown Quản lý Tài khoản & Đăng xuất -->
-  <div class="dropdown d-inline-block" style="position: relative;">
-    <button class="button secondary dropdown-toggle" type="button" id="userMenuButton" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #fff; color: #333; border: 1px solid #ccc;">
-      <i class="fas fa-user-circle me-1 text-primary"></i> {{ current_user.full_name or current_user.email }}
-    </button>
-    <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userMenuButton" style="list-style: none; padding: 0.5rem 0; margin-top: 0.25rem;">
-      <li style="list-style: none; margin: 0;">
-        <button class="dropdown-item w-100 text-start bg-transparent border-0 px-3 py-2" type="button" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
-          <i class="fas fa-key me-2 text-primary"></i> Đổi mật khẩu
+      <!-- Menu tài khoản thuần CSS tích hợp sẵn -->
+      <div class="user-menu-dropdown" style="position: relative; display: inline-block;">
+        <button class="button secondary user-menu-btn" type="button" id="userMenuToggle" style="background: #fff; display: flex; align-items: center; gap: 6px;">
+          <span>{{ current_user.full_name or current_user.email }}</span>
+          <i class="fas fa-chevron-down" style="font-size: 10px;"></i>
         </button>
-      </li>
-      <li><hr class="dropdown-divider my-1"></li>
-      <li style="list-style: none; margin: 0;">
-        <a class="dropdown-item text-danger px-3 py-2 text-decoration-none d-block" href="{{ url_for('auth.logout') }}">
-          <i class="fas fa-sign-out-alt me-2"></i> Đăng xuất
-        </a>
-      </li>
-    </ul>
-  </div>
-  {% if current_user.is_admin %}
-    <a class="button primary" href="{{ url_for('main.upload') }}">Upload file tồn mới</a>
-  {% endif %}
-{% else %}
-  <a class="button primary" href="{{ url_for('auth.login') }}">Đăng nhập hệ thống</a>
-{% endif %}
+        <div id="userMenuDropdownContent" style="display: none; position: absolute; right: 0; top: 105%; background: #fff; border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0,0,0,0.12); border-radius: 4px; min-width: 180px; z-index: 1000; padding: 6px 0;">
+          <button type="button" data-bs-toggle="modal" data-bs-target="#changePasswordModal" style="width: 100%; text-align: left; background: none; border: none; padding: 10px 16px; font: 13px Arial,sans-serif; cursor: pointer; color: var(--ink); display: flex; align-items: center; gap: 8px;" onmouseover="this.style.background='#f5f7f4'" onmouseout="this.style.background='transparent'">
+            <i class="fas fa-key" style="color: var(--green);"></i> Đổi mật khẩu
+          </button>
+          <div style="height: 1px; background: var(--line); margin: 4px 0;"></div>
+          <a href="{{ url_for('auth.logout') }}" style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; font: 13px Arial,sans-serif; color: var(--red); text-decoration: none;" onmouseover="this.style.background='#f5f7f4'" onmouseout="this.style.background='transparent'">
+            <i class="fas fa-sign-out-alt"></i> Đăng xuất
+          </a>
+        </div>
+      </div>
+
+      {% if current_user.is_admin %}
+        <a class="button primary" href="{{ url_for('main.upload') }}">Upload file tồn mới</a>
+      {% endif %}
+    {% else %}
+      <a class="button primary" href="{{ url_for('auth.login') }}">Đăng nhập hệ thống</a>
+    {% endif %}
     {% if batch %}<a class="button secondary" href="{{ url_for('main.export_xlsx') }}">Xuất Excel</a>{% endif %}
   </div>
 </div>
@@ -266,6 +264,19 @@
   var isAuthenticated = {{ 'true' if current_user.is_authenticated else 'false' }};
   var isAdmin = {{ 'true' if current_user.is_admin else 'false' }};
   var allowedUnits = {{ allowed_units | tojson }};
+
+  // Xử lý mở/đóng menu tài khoản cá nhân
+  document.addEventListener('click', function(event) {
+    var dropdown = document.getElementById('userMenuDropdownContent');
+    var toggleBtn = document.getElementById('userMenuToggle');
+    if (!dropdown || !toggleBtn) return;
+    
+    if (toggleBtn.contains(event.target)) {
+      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    } else if (!dropdown.contains(event.target)) {
+      dropdown.style.display = 'none';
+    }
+  });
 
   document.querySelectorAll('[data-modal]').forEach(function(button){
     button.addEventListener('click', function(e){
