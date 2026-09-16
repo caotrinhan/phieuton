@@ -31,9 +31,17 @@ def _get_allowed_units() -> list:
     """Hỗ trợ lấy danh sách các tổ kỹ thuật thuộc quyền quản lý của user hiện tại"""
     if current_user.is_admin:
         return []
-    mappings = TrungTamMapping.query.filter_by(trung_tam_quan_ly=current_user.unit).all()
-    allowed = [m.to_ky_thuat for m in mappings]
-    # Nếu chưa cấu hình mapping, mặc định lấy chính unit của user
+    
+    # Tìm kiếm không phân biệt chữ hoa/thường và khoảng trắng thừa để tránh lệch dữ liệu
+    user_unit_normalized = (current_user.unit or "").strip().lower()
+    all_mappings = TrungTamMapping.query.all()
+    
+    allowed = [
+        m.to_ky_thuat for m in all_mappings 
+        if m.trung_tam_quan_ly and m.trung_tam_quan_ly.strip().lower() == user_unit_normalized
+    ]
+    
+    # Nếu chưa cấu hình mapping, mặc định cho phép unit của chính user
     if not allowed:
         allowed = [current_user.unit]
     return allowed
