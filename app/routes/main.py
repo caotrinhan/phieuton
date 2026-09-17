@@ -84,8 +84,6 @@ def dashboard():
     }
     
     allowed_units = _get_allowed_units() if current_user.is_authenticated else []
-    
-    # Lấy danh sách users phục vụ cho tính năng Admin chọn/reset mật khẩu trực tiếp trên Dashboard nếu cần
     all_users = User.query.order_by(User.full_name).all() if (current_user.is_authenticated and current_user.is_admin) else []
 
     return render_template(
@@ -103,7 +101,6 @@ def dashboard():
 @main_bp.post("/change-password")
 @login_required
 def change_password():
-    """Xử lý đổi mật khẩu cá nhân (Bỏ qua mật khẩu cũ theo yêu cầu cập nhật giao diện)"""
     new_password = request.form.get("new_password", "")
     confirm_password = request.form.get("confirm_password", "")
 
@@ -111,11 +108,6 @@ def change_password():
         flash("Mật khẩu mới và xác nhận mật khẩu không khớp.", "error")
         return redirect(url_for("main.dashboard"))
 
-    if len(new_password) < 6:
-        flash("Mật khẩu mới phải có ít nhất 6 ký tự.", "error")
-        return redirect(url_for("main.dashboard"))
-
-    # Dùng hàm set_password của Model User để mã hóa chuẩn Hash trong DB
     current_user.set_password(new_password)
     db.session.commit()
     
@@ -126,7 +118,6 @@ def change_password():
 @main_bp.post("/admin/reset-password-user")
 @login_required
 def admin_reset_password_user():
-    """Tính năng dành cho Admin: reset mật khẩu của một người dùng bất kỳ về '1'"""
     if not current_user.is_admin:
         flash("Bạn không có quyền thực hiện thao tác này.", "error")
         return redirect(url_for("main.dashboard"))
@@ -141,7 +132,6 @@ def admin_reset_password_user():
         flash(f"Không tìm thấy người dùng với email/username: {target_email}", "error")
         return redirect(url_for("main.dashboard"))
         
-    # Reset mật khẩu về "1" bằng phương thức mã hóa hash của model
     user_to_reset.set_password("1")
     db.session.commit()
     
@@ -179,7 +169,9 @@ def upload():
             flash("Chỉ chấp nhận file .xlsx hoặc .xls.", "error")
             return redirect(url_for("main.upload"))
 
-        upload_dir: Path = current_app.config["UPLOAD_DIR"]
+        upload_dir: Path = Path(current_app.config["UPLOAD_DIR"])
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        
         ca_path = upload_dir / f"{uuid4().hex}_{ca_mau_file.filename}"
         bl_path = upload_dir / f"{uuid4().hex}_{bac_lieu_file.filename}"
         ca_mau_file.save(ca_path)
@@ -270,6 +262,10 @@ def update_reason(ticket_id: int):
     named_images = [image for image in image_files if image and image.filename]
     valid_images = [image for image in named_images if _image_allowed(image.filename)]
     reason_changed = reason != (ticket.reason or "")
+    
+    upload_dir = Path(current_app.config["UPLOAD_DIR"])
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
     if reason_changed:
         audit = ReasonAudit(
             ticket_id=ticket.id,
@@ -282,9 +278,10 @@ def update_reason(ticket_id: int):
         ticket.reason_updated_by_id = current_user.id
         ticket.reason_updated_at = now
         db.session.add(audit)
+        
     for image in valid_images:
         stored_filename = f"{uuid4().hex}_{Path(image.filename).name}"
-        image.save(current_app.config["UPLOAD_DIR"] / stored_filename)
+        image.save(upload_dir / stored_filename)
         db.session.add(TicketImage(
             ticket_id=ticket.id,
             original_filename=Path(image.filename).name,
@@ -292,6 +289,7 @@ def update_reason(ticket_id: int):
             uploaded_at=now,
             uploaded_by_id=current_user.id,
         ))
+        
     if reason_changed or valid_images:
         db.session.commit()
         flash("Đã cập nhật xác minh và hình ảnh minh họa.", "success")
@@ -304,7 +302,8 @@ def update_reason(ticket_id: int):
 @login_required
 def ticket_image(image_id: int):
     image = db.get_or_404(TicketImage, image_id)
-    return send_from_directory(current_app.config["UPLOAD_DIR"], image.stored_filename)
+    upload_dir = Path(current_app.config["UPLOAD_DIR"])
+    return send_from_directory(upload_dir, image.stored_filename)
 
 
 @main_bp.get("/export.xlsx")

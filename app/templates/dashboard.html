@@ -190,8 +190,7 @@
           <td class="reason-preview">{{ ticket.reason or 'Chưa xác minh' }}</td>
           <td class="thumbnail-cell">
             {% for image in ticket.images %}
-            <!-- Đã bổ sung inline style trực tiếp cho button và thẻ img để hiển thị ảnh thu nhỏ rõ ràng -->
-            <button class="thumbnail-button" type="button" data-image-url="{{ url_for('main.ticket_image', image_id=image.id) }}" data-image-name="{{ image.original_filename }}" style="background: none; border: 1px solid var(--line); border-radius: 4px; padding: 2px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin-right: 4px; margin-bottom: 4px;">
+            <button class="thumbnail-button" type="button" data-image-url="{{ url_for('main.ticket_image', image_id=image.id) }}" data-image-name="{{ image.original_filename }}" style="background: none; border: 1px solid var(--line); border-radius: 4px; padding: 2px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin-right: 4px; margin-bottom: 4px;" title="{{ image.original_filename }}">
               <img src="{{ url_for('main.ticket_image', image_id=image.id) }}" alt="{{ image.original_filename }}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 2px; display: block;">
             </button>
             {% else %}
