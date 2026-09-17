@@ -38,7 +38,6 @@
                 <div>
                   <p class="eyebrow">QUẢN TRỊ HỆ THỐNG</p>
                   <h2>Reset mật khẩu người dùng</h2>
-                  
                 </div>
                 <button class="modal-close" type="button" id="closeAdminResetBtn">X</button>
               </div>
@@ -274,15 +273,13 @@
   <div class="modal-card">
     <div class="modal-header">
       <div>
-        
         <h2>Đổi mật khẩu</h2>
-        <p>Tài khoản: {{ current_user.email }} </p>
+        <p>Tài khoản: {{ current_user.email }}</p>
       </div>
       <button class="modal-close" type="button" id="closePasswordModal">X</button>
     </div>
     <form class="modal-form" action="{{ url_for('main.change_password') }}" method="POST">
       <label for="new_password">Mật khẩu mới</label>
-      <!-- Không có minlength hay pattern ràng buộc -->
       <input type="password" id="new_password" name="new_password" required placeholder="Nhập mật khẩu mới..." style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 4px; margin-bottom: 14px; font: inherit;">
       
       <label for="confirm_password">Xác nhận mật khẩu mới</label>
@@ -403,16 +400,32 @@
     }
   }
 
+  // Sửa lỗi lấy đường dẫn ảnh để tương thích chuẩn xác trên cả PC và Smartphone
   document.querySelectorAll('.thumbnail-button').forEach(function(button){
-    button.addEventListener('click', function(){
-      var activeImage = button.dataset.imageUrl;
+    button.addEventListener('click', function(e){
+      e.preventDefault();
+      var activeImage = button.getAttribute('data-image-url') || button.dataset.imageUrl;
+      var imageName = button.getAttribute('data-image-name') || button.dataset.imageName;
+      
+      if (!activeImage) return;
+
       imageScale = 1;
       imageRotation = 0;
-      if(viewerImage) viewerImage.src = activeImage;
+      if(viewerImage) {
+        viewerImage.src = activeImage;
+      }
       var viewerName = document.getElementById('viewer-name');
-      if(viewerName) viewerName.textContent = button.dataset.imageName;
+      if(viewerName) {
+        viewerName.textContent = imageName;
+      }
       renderImage();
-      if(imageModal) imageModal.showModal();
+      if(imageModal) {
+        if (typeof imageModal.showModal === 'function') {
+          imageModal.showModal();
+        } else {
+          imageModal.style.display = 'block';
+        }
+      }
     });
   });
 
