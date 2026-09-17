@@ -404,31 +404,15 @@
   }
 
   document.querySelectorAll('.thumbnail-button').forEach(function(button){
-    button.addEventListener('click', function(e){
-      e.preventDefault();
-      // Hỗ trợ lấy dữ liệu an toàn cho cả PC và điện thoại di động
-      var activeImage = button.getAttribute('data-image-url') || button.dataset.imageUrl;
-      var imageName = button.getAttribute('data-image-name') || button.dataset.imageName;
-      
-      if (!activeImage) return;
-
+    button.addEventListener('click', function(){
+      var activeImage = button.dataset.imageUrl;
       imageScale = 1;
       imageRotation = 0;
-      if(viewerImage) {
-        viewerImage.src = activeImage;
-      }
+      if(viewerImage) viewerImage.src = activeImage;
       var viewerName = document.getElementById('viewer-name');
-      if(viewerName) {
-        viewerName.textContent = imageName;
-      }
+      if(viewerName) viewerName.textContent = button.dataset.imageName;
       renderImage();
-      if(imageModal) {
-        if (typeof imageModal.showModal === 'function') {
-          imageModal.showModal();
-        } else {
-          imageModal.style.display = 'block'; // Fallback nếu trình duyệt điện thoại cũ không hỗ trợ thẻ dialog đầy đủ
-        }
-      }
+      if(imageModal) imageModal.showModal();
     });
   });
 
