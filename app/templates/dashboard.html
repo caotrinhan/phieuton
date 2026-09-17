@@ -190,8 +190,9 @@
           <td class="reason-preview">{{ ticket.reason or 'Chưa xác minh' }}</td>
           <td class="thumbnail-cell">
             {% for image in ticket.images %}
-            <button class="thumbnail-button" type="button" data-image-url="{{ url_for('main.ticket_image', image_id=image.id) }}" data-image-name="{{ image.original_filename }}">
-              <img src="{{ url_for('main.ticket_image', image_id=image.id) }}" alt="{{ image.original_filename }}">
+            <!-- Đã bổ sung inline style trực tiếp cho button và thẻ img để hiển thị ảnh thu nhỏ rõ ràng -->
+            <button class="thumbnail-button" type="button" data-image-url="{{ url_for('main.ticket_image', image_id=image.id) }}" data-image-name="{{ image.original_filename }}" style="background: none; border: 1px solid var(--line); border-radius: 4px; padding: 2px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin-right: 4px; margin-bottom: 4px;">
+              <img src="{{ url_for('main.ticket_image', image_id=image.id) }}" alt="{{ image.original_filename }}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 2px; display: block;">
             </button>
             {% else %}
             <span class="muted">Chưa có</span>
@@ -246,27 +247,28 @@
 </dialog>
 {% endfor %}
 
-<dialog class="image-viewer" id="image-viewer">
-  <div class="image-viewer-card">
-    <div class="modal-header">
+<!-- Khung xem ảnh lớn dạng Div thuần (Tương thích tuyệt đối PC & Mobile) -->
+<div class="image-viewer" id="image-viewer" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 99999; justify-content: center; align-items: center; padding: 20px;">
+  <div class="image-viewer-card" style="background: #fff; width: 100%; max-width: 800px; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: #f5f7f4; border-bottom: 1px solid var(--line);">
       <div>
-        <p class="eyebrow">HÌNH ẢNH MINH HỌA</p>
-        <strong id="viewer-name"></strong>
+        <p class="eyebrow" style="margin: 0; font-size: 11px; color: var(--green);">HÌNH ẢNH MINH HỌA</p>
+        <strong id="viewer-name" style="font-size: 14px; color: var(--ink);"></strong>
       </div>
-      <button class="modal-close" type="button" data-close-image>X</button>
+      <button class="modal-close" type="button" id="closeImageViewerBtn" style="background: none; border: none; font-size: 18px; font-weight: bold; cursor: pointer; padding: 5px 10px;">✕</button>
     </div>
-    <div class="viewer-stage">
-      <img id="viewer-image" alt="Hình ảnh minh họa">
+    <div class="viewer-stage" style="padding: 20px; text-align: center; background: #111; min-height: 350px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+      <img id="viewer-image" alt="Hình ảnh minh họa" style="max-width: 100%; max-height: 60vh; transition: transform 0.2s ease; object-fit: contain;">
     </div>
-    <div class="viewer-controls">
-      <button type="button" data-image-action="zoom-out">Thu nhỏ</button>
-      <button type="button" data-image-action="zoom-in">Phóng to</button>
-      <button type="button" data-image-action="rotate-left">Xoay trái</button>
-      <button type="button" data-image-action="rotate-right">Xoay phải</button>
-      <button type="button" data-image-action="reset">Reset</button>
+    <div class="viewer-controls" style="padding: 12px 20px; background: #f5f7f4; display: flex; gap: 8px; justify-content: center; border-top: 1px solid var(--line);">
+      <button type="button" class="button secondary" data-image-action="zoom-out" style="padding: 6px 12px; font-size: 12px;">Thu nhỏ</button>
+      <button type="button" class="button secondary" data-image-action="zoom-in" style="padding: 6px 12px; font-size: 12px;">Phóng to</button>
+      <button type="button" class="button secondary" data-image-action="rotate-left" style="padding: 6px 12px; font-size: 12px;">Xoay trái</button>
+      <button type="button" class="button secondary" data-image-action="rotate-right" style="padding: 6px 12px; font-size: 12px;">Xoay phải</button>
+      <button type="button" class="button secondary" data-image-action="reset" style="padding: 6px 12px; font-size: 12px;">Reset</button>
     </div>
   </div>
-</dialog>
+</div>
 
 <!-- Modal Đổi Mật Khẩu (Chuẩn thẻ dialog) -->
 <dialog class="reason-modal" id="changePasswordModal">
@@ -389,8 +391,10 @@
     });
   });
 
+  // Xử lý mở/đóng khung xem ảnh lớn
   var imageModal = document.getElementById('image-viewer');
   var viewerImage = document.getElementById('viewer-image');
+  var closeImageViewerBtn = document.getElementById('closeImageViewerBtn');
   var imageScale = 1;
   var imageRotation = 0;
 
@@ -400,7 +404,6 @@
     }
   }
 
-  // Sửa lỗi lấy đường dẫn ảnh để tương thích chuẩn xác trên cả PC và Smartphone
   document.querySelectorAll('.thumbnail-button').forEach(function(button){
     button.addEventListener('click', function(e){
       e.preventDefault();
@@ -419,12 +422,9 @@
         viewerName.textContent = imageName;
       }
       renderImage();
+      
       if(imageModal) {
-        if (typeof imageModal.showModal === 'function') {
-          imageModal.showModal();
-        } else {
-          imageModal.style.display = 'block';
-        }
+        imageModal.style.display = 'flex';
       }
     });
   });
@@ -441,11 +441,21 @@
     });
   });
 
-  document.querySelector('[data-close-image]')?.addEventListener('click', function(){
-    if(imageModal) imageModal.close();
-  });
+  if (closeImageViewerBtn && imageModal) {
+    closeImageViewerBtn.addEventListener('click', function(){
+      imageModal.style.display = 'none';
+    });
+  }
 
-  // Xử lý mở/đóng modal Reset mật khẩu Admin (Dùng thẻ dialog)
+  if (imageModal) {
+    imageModal.addEventListener('click', function(e) {
+      if (e.target === imageModal) {
+        imageModal.style.display = 'none';
+      }
+    });
+  }
+
+  // Xử lý mở/đóng modal Reset mật khẩu Admin
   var adminResetModal = document.getElementById('adminResetModal');
   var openAdminResetBtn = document.getElementById('openAdminResetBtn');
   var closeAdminResetBtn = document.getElementById('closeAdminResetBtn');
