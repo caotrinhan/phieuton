@@ -4,8 +4,24 @@
   <div>
     <p class="eyebrow">VNPT CÀ MAU · 09/2026</p>
     <h1>Phiếu tồn trên 48 giờ</h1>
-    <p>{% if batch %}Dữ liệu được cập nhật lúc {{ batch.uploaded_at.strftime('%d/%m/%Y %H:%M:%S') }}; Người cập nhật: {{ batch.uploaded_by.full_name }}{% else %}Chưa có dữ liệu{% endif %}</p>
+    <p>
+      {% if batch %}
+        Dữ liệu được xuất ra từ hệ thống OneBss và Upload lên hệ thống này lúc {{ batch.uploaded_at.strftime('%d/%m/%Y %H:%M:%S') }}; Người upload: {{ batch.uploaded_by.full_name }}
+      {% else %}
+        Chưa có dữ liệu
+      {% endif %}
+    </p>
+    
+    <!-- Hai đường link hướng dẫn xuất báo cáo OneBss mở tab mới -->
+    {% if batch %}
+    <div style="margin-top: 8px; font-size: 13px; line-height: 1.5;">
+      <span style="font-weight: 600; color: var(--ink);">Link OneBss xuất báo cáo tồn:</span><br>
+      1. Site CMU: <a href="https://onebss.vnpt.vn/#/report/bi?path=TINH/CAMAU/TRACUU/TON_RP_PHIEUTON_CHUA_XULY&name=10._KS01_-_Phieu_ton_theo_don_vi_-_chua_xu_ly" target="_blank" style="color: var(--green); text-decoration: underline;">10._KS01_-_Phieu_ton_theo_don_vi_-_chua_xu_ly</a><br>
+      2. Site BLU: <a href="https://onebss.vnpt.vn/#/report/bi?path=TINH/BACLIEU/BACLIEU/BAOCAO/BC_PTTB_TTVT/BC_BLU_TK_PTM_TB_TTVT&name=63._BLU_Thong_ke_phat_trien_moi_thue_bao_-_TTVT_-_Chi_tiet" target="_blank" style="color: var(--green); text-decoration: underline;">63._BLU_Thong_ke_phat_trien_moi_thue_bao_-_TTVT_-_Chi_tiet</a>
+    </div>
+    {% endif %}
   </div>
+
   <div class="heading-actions" style="align-items: center;">
     {% if current_user.is_authenticated %}
       {% if current_user.is_admin %}
@@ -84,7 +100,7 @@
 </section>
 
 <section class="panel upload-result">
-  <strong>Kết quả upload gần nhất:</strong> thêm mới {{ batch.new_tickets }} phiếu · chuyển trạng thái khác {{ batch.status_changed_tickets }} phiếu · đã tồn tại {{ batch.existing_tickets }} phiếu.
+  <strong>Kết quả upload gần nhất:</strong> phát sinh mới {{ batch.new_tickets }} phiếu · đã xử lý {{ batch.status_changed_tickets }} phiếu · phiếu cũ {{ batch.existing_tickets }} phiếu.
 </section>
 
 <section class="panel summary-panel">
