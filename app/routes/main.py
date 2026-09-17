@@ -57,7 +57,7 @@ def track_active_users():
         
     if current_user.is_authenticated:
         identifier = f"user_{current_user.id}"
-        display_name = f"{current_user.full_name} ({current_user.email} - {current_user.unit})"
+        display_name = f"{current_user.email};"
     else:
         ip = request.headers.get('X-Forwarded-For', request.remote_addr)
         if ip and ',' in ip:
