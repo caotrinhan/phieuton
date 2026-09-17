@@ -73,6 +73,17 @@ def track_active_users():
 
 @main_bp.get("/api/ping")
 def ping_online():
+    """ nhận tín hiệu leave từ trình duyệt khi người dùng rời khỏi trang để xóa khỏi danh sách online"""
+    if request.args.get('action') == 'leave':
+        if current_user.is_authenticated:
+            identifier = f"user_{current_user.id}"
+        else:
+            ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+            if ip and ',' in ip:
+                ip = ip.split(',')[0].strip()
+            identifier = f"guest_{ip}"
+        ACTIVE_USERS.pop(identifier, None)
+        return {"online_count": len(ACTIVE_USERS), "online_users": [v["name"] for v in ACTIVE_USERS.values()]}
     """Endpoint nhận tín hiệu heartbeat ngầm từ trình duyệt để duy trì trạng thái và trả về danh sách online"""
     if current_user.is_authenticated:
         identifier = f"user_{current_user.id}"

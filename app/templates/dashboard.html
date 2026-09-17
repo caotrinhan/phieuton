@@ -521,5 +521,9 @@ function updateOnlineStatus() {
 // Chạy ngay khi mở trang và lặp lại mỗi 30 giây
 updateOnlineStatus();
 setInterval(updateOnlineStatus, 30000);
+// Gửi tín hiệu thông báo ngay lập tức khi người dùng đóng tab hoặc rời khỏi trang
+window.addEventListener('beforeunload', function () {
+    navigator.sendBeacon('/api/ping?action=leave');
+});
 </script>
 {% endblock %}
