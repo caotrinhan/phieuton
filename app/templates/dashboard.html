@@ -2,12 +2,8 @@
 {% block content %}
 
 <!-- Dòng hiển thị danh sách người đang xem ở ngay đầu trang (dưới top bar) -->
-<div class="panel" style="margin-top: 5px; margin-bottom: 20px; padding: 12px 20px; background: #f8f9fa; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; color: var(--ink); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-  <span style="font-weight: 600; color: var(--green); display: inline-flex; align-items: center; gap: 5px;">
-    <span style="width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; display: inline-block; box-shadow: 0 0 5px #2ecc71;"></span>
-   Đang xem&nbsp;(<span id="online-count-badge" style="margin: 0; padding: 0;">1</span>):
-  </span> 
-  <span id="online-users-list" style="color: #555; word-break: break-all;">Đang cập nhật danh sách...</span>
+<div class="panel" style="margin-top: -12px; margin-bottom: 15px; padding: 10px 20px; background: #f8f9fa; border: 1px solid var(--line); border-radius: 0 0 6px 6px; font-size: 13px; color: var(--ink); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border-top: none;">
+  <span style="font-weight: 600; color: var(--green); display: inline-flex; align-items: center; gap: 5px;"><span style="width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; display: inline-block; box-shadow: 0 0 5px #2ecc71;"></span>Đang xem(<span id="online-count-badge" style="margin: 0; padding: 0;">1</span>):</span><span id="online-users-list" style="color: #555; word-break: break-all;">Đang cập nhật danh sách...</span>
 </div>
 
 <div class="page-heading">
@@ -509,7 +505,7 @@ function updateOnlineStatus() {
         var badge = document.getElementById('online-count-badge');
         if (badge) badge.textContent = data.online_count;
 
-        // Cập nhật danh sách chi tiết tên user và IP
+        // Cập nhật danh sách online (backend đã trả về mảng email hoặc chuỗi tùy chỉnh rút gọn)
         var listElem = document.getElementById('online-users-list');
         if (listElem && data.online_users) {
             listElem.textContent = data.online_users.join(' · ');
