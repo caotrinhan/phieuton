@@ -73,7 +73,7 @@ def track_active_users():
 
 @main_bp.get("/api/ping")
 def ping_online():
-    """ nhận tín hiệu leave từ trình duyệt khi người dùng rời khỏi trang để xóa khỏi danh sách online"""
+    """Xử lý tín hiệu leave hoặc heartbeat ngầm từ trình duyệt để duy trì trạng thái và trả về danh sách online"""
     if request.args.get('action') == 'leave':
         if current_user.is_authenticated:
             identifier = f"user_{current_user.id}"
@@ -84,7 +84,7 @@ def ping_online():
             identifier = f"guest_{ip}"
         ACTIVE_USERS.pop(identifier, None)
         return {"online_count": len(ACTIVE_USERS), "online_users": [v["name"] for v in ACTIVE_USERS.values()]}
-    """Endpoint nhận tín hiệu heartbeat ngầm từ trình duyệt để duy trì trạng thái và trả về danh sách online"""
+        
     if current_user.is_authenticated:
         identifier = f"user_{current_user.id}"
         display_name = f"{current_user.full_name} ({current_user.email} - {current_user.unit})"
@@ -100,8 +100,8 @@ def ping_online():
         "last_active": datetime.now()
     }
     
-    # Dọn dẹp tự động các phiên không gửi tín hiệu trong 60 giây qua (đã tắt tab hoặc rời khỏi trang)
-    threshold = datetime.now() - timedelta(seconds=60)
+    # RÚT NGẮN XUỐNG 15 GIÂY: Tự động loại bỏ phiên nếu không nhận được tín hiệu làm mới trong 15 giây qua
+    threshold = datetime.now() - timedelta(seconds=15)
     expired_keys = [k for k, v in ACTIVE_USERS.items() if v["last_active"] < threshold]
     for k in expired_keys:
         ACTIVE_USERS.pop(k, None)

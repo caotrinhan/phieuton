@@ -2,7 +2,7 @@
 {% block content %}
 
 <!-- Dòng hiển thị danh sách người đang xem ở ngay đầu trang (dưới top bar) -->
-<div class="panel" style="margin-top: 15px; margin-bottom: 20px; padding: 12px 20px; background: #f8f9fa; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; color: var(--ink); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+<div class="panel" style="margin-top: 5px; margin-bottom: 20px; padding: 12px 20px; background: #f8f9fa; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; color: var(--ink); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
   <span style="font-weight: 600; color: var(--green); display: inline-flex; align-items: center; gap: 5px;">
     <span style="width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; display: inline-block; box-shadow: 0 0 5px #2ecc71;"></span>
     Đang xem (<span id="online-count-badge">1</span>):
@@ -518,9 +518,10 @@ function updateOnlineStatus() {
     .catch(err => console.log('Online status error:', err));
 }
 
-// Chạy ngay khi mở trang và lặp lại mỗi 30 giây
+// Chạy ngay khi mở trang và lặp lại mỗi 10 giây để cập nhật trực tuyến cực nhanh
 updateOnlineStatus();
-setInterval(updateOnlineStatus, 30000);
+setInterval(updateOnlineStatus, 10000);
+
 // Gửi tín hiệu thông báo ngay lập tức khi người dùng đóng tab hoặc rời khỏi trang
 window.addEventListener('beforeunload', function () {
     navigator.sendBeacon('/api/ping?action=leave');
