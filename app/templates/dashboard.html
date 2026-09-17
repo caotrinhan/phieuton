@@ -1,4 +1,9 @@
 {% extends 'base.html' %}
+ <!-- Dòng hiển thị danh sách người đang xem ở cuối trang -->
+<div class="panel center" style="margin-top: 30px; padding: 15px 20px; background: #f8f9fa; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; color: var(--ink);">
+  <span style="font-weight: 600; color: var(--green);">Đang xem (<span id="online-count-badge">1</span>):</span> 
+  <span id="online-users-list" style="color: #555; margin-left: 6px;">Đang cập nhật...</span>
+</div>
 {% block content %}
 <div class="page-heading">
   <div>
@@ -234,6 +239,7 @@
       </tbody>
     </table>
   </div>
+ 
 </section>
 
 {% for ticket in tickets %}
@@ -490,5 +496,25 @@
     });
   }
 })();
+function updateOnlineStatus() {
+    fetch('/api/ping')
+    .then(response => response.json())
+    .then(data => {
+        // Cập nhật số lượng
+        var badge = document.getElementById('online-count-badge');
+        if (badge) badge.textContent = data.online_count;
+
+        // Cập nhật danh sách chi tiết tên user và IP
+        var listElem = document.getElementById('online-users-list');
+        if (listElem && data.online_users) {
+            listElem.textContent = data.online_users.join(' · ');
+        }
+    })
+    .catch(err => console.log('Online status error:', err));
+}
+
+// Chạy ngay khi mở trang và lặp lại mỗi 30 giây
+updateOnlineStatus();
+setInterval(updateOnlineStatus, 30000);
 </script>
 {% endblock %}

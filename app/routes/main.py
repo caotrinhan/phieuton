@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 from uuid import uuid4
@@ -13,6 +13,9 @@ from ..time_utils import local_now
 
 
 main_bp = Blueprint("main", __name__)
+
+# Từ điển lưu trữ danh sách người đang xem trực tuyến trên RAM server: { identifier: {"name": str, "last_active": datetime} }
+ACTIVE_USERS = {}
 
 
 def _allowed(filename: str) -> bool:
@@ -44,6 +47,59 @@ def _get_allowed_units() -> list:
         allowed = [current_user.unit]
         
     return allowed
+
+
+@main_bp.before_request
+def track_active_users():
+    """Tự động ghi nhận hoặc cập nhật trạng thái online của người truy cập (cả user và khách qua IP)"""
+    if request.path.startswith('/static') or request.path.startswith('/ticket-images') or request.path.startswith('/api/ping'):
+        return
+        
+    if current_user.is_authenticated:
+        identifier = f"user_{current_user.id}"
+        display_name = f"{current_user.full_name} ({current_user.email} - {current_user.unit})"
+    else:
+        ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        if ip and ',' in ip:
+            ip = ip.split(',')[0].strip()
+        identifier = f"guest_{ip}"
+        display_name = f"Khách (IP: {ip})"
+        
+    ACTIVE_USERS[identifier] = {
+        "name": display_name,
+        "last_active": datetime.now()
+    }
+
+
+@main_bp.get("/api/ping")
+def ping_online():
+    """Endpoint nhận tín hiệu heartbeat ngầm từ trình duyệt để duy trì trạng thái và trả về danh sách online"""
+    if current_user.is_authenticated:
+        identifier = f"user_{current_user.id}"
+        display_name = f"{current_user.full_name} ({current_user.email} - {current_user.unit})"
+    else:
+        ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        if ip and ',' in ip:
+            ip = ip.split(',')[0].strip()
+        identifier = f"guest_{ip}"
+        display_name = f"Khách (IP: {ip})"
+        
+    ACTIVE_USERS[identifier] = {
+        "name": display_name,
+        "last_active": datetime.now()
+    }
+    
+    # Dọn dẹp tự động các phiên không gửi tín hiệu trong 60 giây qua (đã tắt tab hoặc rời khỏi trang)
+    threshold = datetime.now() - timedelta(seconds=60)
+    expired_keys = [k for k, v in ACTIVE_USERS.items() if v["last_active"] < threshold]
+    for k in expired_keys:
+        ACTIVE_USERS.pop(k, None)
+        
+    user_list = [v["name"] for v in ACTIVE_USERS.values()]
+    return {
+        "online_count": len(ACTIVE_USERS),
+        "online_users": user_list
+    }
 
 
 @main_bp.get("/")
@@ -299,7 +355,6 @@ def update_reason(ticket_id: int):
 
 
 @main_bp.get("/ticket-images/<int:image_id>")
-
 def ticket_image(image_id: int):
     image = db.get_or_404(TicketImage, image_id)
     upload_dir = Path(current_app.config["UPLOAD_DIR"])
