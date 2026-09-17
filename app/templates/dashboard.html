@@ -38,9 +38,9 @@
                 <div>
                   <p class="eyebrow">QUẢN TRỊ HỆ THỐNG</p>
                   <h2>Reset mật khẩu người dùng</h2>
-                  <p>Chọn hoặc tìm kiếm tài khoản cần cấp lại mật khẩu</p>
+                  
                 </div>
-                <button class="modal-close" type="button" id="closeAdminResetBtn">Đóng</button>
+                <button class="modal-close" type="button" id="closeAdminResetBtn">X</button>
               </div>
               
               <div class="modal-form" style="padding-top: 10px;">
@@ -155,7 +155,7 @@
 <section class="panel detail-panel">
   <div class="panel-title">
     <h2>Chi tiết</h2>
-    <p class="panel-help">Nhấn vào mã thuê bao hoặc tên thuê bao để cập nhật lý do tồn / upload hình ảnh liên quan (Hệ thống sẽ kiểm tra đăng nhập và quyền quản lý Tổ kỹ thuật).</p>
+    <p class="panel-help">Nhấn vào mã thuê bao hoặc tên thuê bao để cập nhật lý do tồn / upload hình ảnh liên quan; Nhấn vào hình để phóng to hình ảnh minh họa.</p>
     <span>{{ tickets|length }} dòng</span>
   </div>
   <div class="table-wrap">
@@ -227,7 +227,7 @@
         <h2>{{ ticket.subscriber_code }}</h2>
         <p>{{ ticket.subscriber_name }} · {{ ticket.unit }}</p>
       </div>
-      <button class="modal-close" type="button" data-close-modal>Đóng</button>
+      <button class="modal-close" type="button" data-close-modal>X</button>
     </div>
     <form class="modal-form" method="post" enctype="multipart/form-data" action="{{ url_for('main.update_reason', ticket_id=ticket.id) }}">
       <label for="modal-reason-{{ ticket.id }}">Lý do tồn</label>
@@ -254,7 +254,7 @@
         <p class="eyebrow">HÌNH ẢNH MINH HỌA</p>
         <strong id="viewer-name"></strong>
       </div>
-      <button class="modal-close" type="button" data-close-image>Đóng</button>
+      <button class="modal-close" type="button" data-close-image>X</button>
     </div>
     <div class="viewer-stage">
       <img id="viewer-image" alt="Hình ảnh minh họa">
@@ -264,7 +264,7 @@
       <button type="button" data-image-action="zoom-in">Phóng to</button>
       <button type="button" data-image-action="rotate-left">Xoay trái</button>
       <button type="button" data-image-action="rotate-right">Xoay phải</button>
-      <button type="button" data-image-action="reset">Đặt lại</button>
+      <button type="button" data-image-action="reset">Reset</button>
     </div>
   </div>
 </dialog>
@@ -274,11 +274,11 @@
   <div class="modal-card">
     <div class="modal-header">
       <div>
-        <p class="eyebrow">BẢO MẬT TÀI KHOẢN</p>
+        
         <h2>Đổi mật khẩu</h2>
-        <p>Cập nhật mật khẩu mới cho tài khoản của bạn</p>
+        <p>Tài khoản: {{ current_user.email }} </p>
       </div>
-      <button class="modal-close" type="button" id="closePasswordModal">Đóng</button>
+      <button class="modal-close" type="button" id="closePasswordModal">X</button>
     </div>
     <form class="modal-form" action="{{ url_for('main.change_password') }}" method="POST">
       <label for="new_password">Mật khẩu mới</label>
