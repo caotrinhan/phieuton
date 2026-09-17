@@ -92,10 +92,29 @@
 
 {% if batch %}
 <section class="metrics">
-  <div class="metric"><span>Phiếu &gt;48h</span><strong>{{ batch.over_48h_tickets }}</strong></div>
-  <div class="metric"><span>Đã xác minh</span><strong>{{ tickets|selectattr('reason')|list|length }}</strong></div>
-  <div class="metric"><span>Phiếu mới</span><strong>{{ batch.new_tickets }}</strong></div>
-  <div class="metric"><span>Upload lúc</span><strong class="metric-time">{{ batch.uploaded_at.strftime('%H:%M:%S') }}</strong></div>
+ <!-- Card 1: Tổng số phiếu >48h (Tông màu xanh dương nhạt) -->
+  <div class="metric" style="background: #e8f4fd; border-left: 4px solid #2196f3; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.04);">
+    <span style="font-size: 12px; font-weight: 600; color: #1565c0; text-transform: uppercase;">Phiếu &gt;48h</span>
+    <strong style="display: block; font-size: 24px; color: #0d47a1; margin-top: 5px;">{{ batch.over_48h_tickets }}</strong>
+  </div>
+
+  <!-- Card 2: Đã xác minh (Tông màu xanh lá nhạt) -->
+  <div class="metric" style="background: #e8f8f0; border-left: 4px solid #2e7d32; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.04);">
+    <span style="font-size: 12px; font-weight: 600; color: #2e7d32; text-transform: uppercase;">Đã xác minh</span>
+    <strong style="display: block; font-size: 24px; color: #1b5e20; margin-top: 5px;">{{ tickets|selectattr('reason')|list|length }}</strong>
+  </div>
+
+  <!-- Card 3: Phiếu >48h mới (Tông màu cam/vàng nhạt nổi bật) -->
+  <div class="metric" style="background: #fff8e1; border-left: 4px solid #f57c00; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.04);">
+    <span style="font-size: 12px; font-weight: 600; color: #ef6c00; text-transform: uppercase;">Phiếu &gt;48h mới</span>
+    <strong style="display: block; font-size: 24px; color: #e65100; margin-top: 5px;">{{ batch.new_tickets }}</strong>
+  </div>
+
+  <!-- Card 4: Upload lúc (Tông màu xám nhạt / trung tính thanh lịch) -->
+  <div class="metric" style="background: #f1f3f5; border-left: 4px solid #495057; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.04);">
+    <span style="font-size: 12px; font-weight: 600; color: #495057; text-transform: uppercase;">Upload lúc</span>
+    <strong class="metric-time" style="display: block; font-size: 22px; color: #212529; margin-top: 5px;">{{ batch.uploaded_at.strftime('%H:%M:%S') }}</strong>
+  </div>
 </section>
 
 <section class="panel upload-result">
