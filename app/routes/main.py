@@ -299,7 +299,7 @@ def update_reason(ticket_id: int):
 
 
 @main_bp.get("/ticket-images/<int:image_id>")
-@login_required
+
 def ticket_image(image_id: int):
     image = db.get_or_404(TicketImage, image_id)
     upload_dir = Path(current_app.config["UPLOAD_DIR"])
