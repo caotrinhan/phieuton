@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<!-- Thanh trạng thái người đang xem (đã được tinh chỉnh padding, bo góc gọn gàng) -->
+<!-- Thanh trạng thái người đang xem -->
 <div class="panel" style="margin-top: -12px; margin-bottom: 12px; padding: 8px 16px; background: #f8f9fa; border: 1px solid var(--line); border-radius: 0 0 6px 6px; font-size: 13px; color: var(--ink); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border-top: none;">
   <span style="font-weight: 600; color: var(--green); display: inline-flex; align-items: center; gap: 5px;">
     <span style="width: 7px; height: 7px; background: #2ecc71; border-radius: 50%; display: inline-block; box-shadow: 0 0 4px #2ecc71;"></span>Đang xem (<span id="online-count-badge" style="margin: 0; padding: 0;">1</span>):
@@ -9,20 +9,19 @@
   <span id="online-users-list" style="color: #555; word-break: break-all;">Đang cập nhật danh sách...</span>
 </div>
 
-<!-- Phần Tiêu đề & Hành động chính (Bố cục 2 cột cân đối: Tiêu đề bên trái, nút bấm bên phải) -->
+<!-- Phần Tiêu đề & Hành động chính -->
 <div class="page-heading" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 16px;">
   <div style="flex: 1; min-width: 280px;">
     <p class="eyebrow" style="margin-bottom: 2px;">VNPT CÀ MAU · 09/2026</p>
     <h1 style="margin-bottom: 6px;">Phiếu tồn trên 48 giờ</h1>
     <p style="margin: 0; color: #666; font-size: 13px;">
       {% if batch %}
-        Dữ liệu xuất từ hệ thống OneBss (2 link bên dưới) và upload lên hệ thống này lúc <strong>{{ batch.uploaded_at.strftime('%d/%m/%Y %H:%M:%S') }}</strong>·<hr/> Người upload: <strong>{{ batch.uploaded_by.full_name }}</strong>
+        Dữ liệu xuất từ hệ thống OneBss và upload lên hệ thống lúc <strong>{{ batch.uploaded_at.strftime('%d/%m/%Y %H:%M:%S') }}</strong> · Người upload: <strong>{{ batch.uploaded_by.full_name }}</strong>
       {% else %}
         Chưa có dữ liệu
       {% endif %}
     </p>
     
-    <!-- Link OneBss rút gọn dạng Dropdown/Pop-over hoặc Link gọn gàng tránh rườm rà -->
     {% if batch %}
     <div style="margin-top: 6px; font-size: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
       <span style="font-weight: 600; color: var(--ink);">Link xuất OneBss:</span>
@@ -32,14 +31,12 @@
     {% endif %}
   </div>
 
-  <!-- Nhóm các nút thao tác gọn gàng ở góc phải -->
   <div class="heading-actions" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
     {% if current_user.is_authenticated %}
       {% if current_user.is_admin %}
         <a class="button primary" href="{{ url_for('main.upload') }}" style="font-size: 13px; padding: 8px 14px;">Upload file mới</a>
         <button type="button" class="button secondary" id="openAdminResetBtn" style="font-size: 13px; padding: 8px 14px;">Reset MK</button>
 
-        <!-- Modal Quản trị: Reset mật khẩu người dùng -->
         <dialog class="reason-modal" id="adminResetModal">
           <div class="modal-card">
             <form method="POST" action="{{ url_for('main.admin_reset_password_user') }}">
@@ -79,19 +76,18 @@
     {% endif %}
 
     {% if current_user.is_authenticated %}
-      <!-- Menu tài khoản cá nhân -->
       <div class="user-menu-dropdown" style="position: relative; display: inline-block;">
         <button class="button secondary user-menu-btn" type="button" id="userMenuToggle" style="background: #fff; display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 8px 14px;">
           <span>Tài khoản</span>
-          <i class="fas fa-chevron-down" style="font-size: 10px;"></i>
+          <span style="font-size: 10px;">▼</span>
         </button>
         <div id="userMenuDropdownContent" style="display: none; position: absolute; right: 0; top: 105%; background: #fff; border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0,0,0,0.12); border-radius: 4px; min-width: 180px; z-index: 1000; padding: 6px 0;">
           <button type="button" id="openChangePasswordBtn" style="width: 100%; text-align: left; background: none; border: none; padding: 10px 16px; font: 13px Arial,sans-serif; cursor: pointer; color: var(--ink); display: flex; align-items: center; gap: 8px;" onmouseover="this.style.background='#f5f7f4'" onmouseout="this.style.background='transparent'">
-            <i class="fas fa-key" style="color: var(--green);"></i> Đổi mật khẩu
+            🔑 Đổi mật khẩu
           </button>
           <div style="height: 1px; background: var(--line); margin: 4px 0;"></div>
           <a href="{{ url_for('auth.logout') }}" style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; font: 13px Arial,sans-serif; color: var(--red); text-decoration: none;" onmouseover="this.style.background='#f5f7f4'" onmouseout="this.style.background='transparent'">
-            <i class="fas fa-sign-out-alt"></i> Đăng xuất
+            🚪 Đăng xuất
           </a>
         </div>
       </div>
@@ -100,7 +96,7 @@
 </div>
 
 {% if batch %}
-<!-- Thống kê dạng thẻ (Metrics) gọn gàng hơn -->
+<!-- Thống kê dạng thẻ (Metrics) -->
 <section class="metrics" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px;">
   <div class="metric" style="background: #e8f4fd; border-left: 4px solid #2196f3; padding: 12px 16px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
     <span style="font-size: 11px; font-weight: 600; color: #1565c0; text-transform: uppercase;">Phiếu &gt;48h</span>
@@ -123,7 +119,7 @@
   </div>
 </section>
 
-<!-- Thông báo kết quả upload thu gọn -->
+<!-- Thông báo kết quả upload -->
 <section class="panel upload-result" style="padding: 8px 16px; font-size: 13px; margin-bottom: 16px; background: #fff; border: 1px solid var(--line); border-radius: 6px;">
   <span><strong>Kết quả upload gần nhất:</strong> Phát sinh mới <span style="color: #d35400; font-weight: 600;">{{ batch.new_tickets }}</span> phiếu · Đã xử lý <span style="color: #27ae60; font-weight: 600;">{{ batch.status_changed_tickets }}</span> phiếu · Phiếu cũ <span style="color: #7f8c8d; font-weight: 600;">{{ batch.existing_tickets }}</span> phiếu.</span>
 </section>
@@ -158,7 +154,6 @@
           <td>{{ row.mytv }}</td>
           <td>{{ row.mesh }}</td>
           <td>{{ row.camera }}</td>
-          <!-- CỘT TỔNG: Làm nổi bật với chữ đậm, màu đỏ và nền xám nhạt -->
           <td style="font-weight: bold; color: #d9534f; background-color: #fcf8e3;">{{ row.total }}</td>
           <td>{{ row.reported }}</td>
           <td>{{ (row.reported * 100 / row.total)|round(2) }}</td>
@@ -173,7 +168,6 @@
           <td>{{ summary_total.mytv }}</td>
           <td>{{ summary_total.mesh }}</td>
           <td>{{ summary_total.camera }}</td>
-          <!-- DÒNG TỔNG CỘNG CỦA CỘT TỔNG -->
           <td style="font-weight: bold; color: #d9534f; background-color: #fcf8e3;">{{ summary_total.total }}</td>
           <td>{{ summary_total.reported }}</td>
           <td>{{ (summary_total.reported * 100 / summary_total.total)|round(2) if summary_total.total else 0 }}</td>
@@ -214,7 +208,8 @@
       </thead>
       <tbody>
         {% for ticket in tickets %}
-        <tr>
+        <!-- PHÂN MÀU DÒNG THEO TRẠNG THÁI LÝ DO: Đã có lý do (xanh nhạt), Chưa có lý do (đỏ danger nhạt) -->
+        <tr style="{% if ticket.reason and ticket.reason.strip() %}background-color: #f2f9f5;{% else %}background-color: #fdf5f5;{% endif %}">
           <td>{{ loop.index }}</td>
           <td>{{ ticket.unit }}</td>
           <td>{{ ticket.equipment_type }}</td>
@@ -222,14 +217,14 @@
           <td><button class="ticket-link ticket-name" type="button" data-modal="reason-modal-{{ ticket.id }}" data-ticket-unit="{{ ticket.unit }}">{{ ticket.subscriber_name }}</button></td>
           <td>{{ ticket.request_at.strftime('%d/%m/%Y %H:%M:%S') }}</td>
           <td class="hours">{{ ticket.age_hours }}</td>
-          <td class="reason-preview">{{ ticket.reason or 'Chưa xác minh' }}</td>
+          <td class="reason-preview" style="{% if not ticket.reason or not ticket.reason.strip() %}color: #d9534f; font-weight: 500;{% else %}color: #2e7d32;{% endif %}">{{ ticket.reason or 'Chưa xác minh' }}</td>
           <td class="thumbnail-cell">
             {% for image in ticket.images %}
             <button class="thumbnail-button" type="button" data-image-url="{{ url_for('main.ticket_image', image_id=image.id) }}" data-image-name="{{ image.original_filename }}" style="background: none; border: 1px solid var(--line); border-radius: 4px; padding: 2px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin-right: 4px; margin-bottom: 4px;" title="{{ image.original_filename }}">
               <img src="{{ url_for('main.ticket_image', image_id=image.id) }}" alt="{{ image.original_filename }}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 2px; display: block;">
             </button>
             {% else %}
-            <span class="muted">Chưa có</span>
+            <span class="muted" style="color: #d9534f;">Chưa có</span>
             {% endfor %}
           </td>
           <td>{{ ticket.address or '' }}</td>
@@ -252,7 +247,7 @@
   </div>
 </section>
 
-<!-- Modals & Viewer giữ nguyên logic xử lý -->
+<!-- Modals & Viewer -->
 {% for ticket in tickets %}
 <dialog class="reason-modal" id="reason-modal-{{ ticket.id }}">
   <div class="modal-card">
@@ -282,9 +277,9 @@
 </dialog>
 {% endfor %}
 
-<!-- Khung xem ảnh lớn (Đã chỉnh sửa để có thể cuộn xem toàn bộ ảnh phóng to và dùng icon thay thế chữ) -->
+<!-- Khung xem ảnh lớn (Đã tinh chỉnh để hỗ trợ cuộn cả hai chiều NGANG và DỌC khi phóng to ảnh) -->
 <div class="image-viewer" id="image-viewer" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 99999; justify-content: center; align-items: center; padding: 20px;">
-  <div class="image-viewer-card" style="background: #fff; width: 100%; max-width: 850px; max-height: 90vh; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+  <div class="image-viewer-card" style="background: #fff; width: 100%; max-width: 900px; max-height: 92vh; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
     <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: #f5f7f4; border-bottom: 1px solid var(--line); flex-shrink: 0;">
       <div>
         <p class="eyebrow" style="margin: 0; font-size: 11px; color: var(--green);">HÌNH ẢNH MINH HỌA</p>
@@ -292,16 +287,19 @@
       </div>
       <button class="modal-close" type="button" id="closeImageViewerBtn" style="background: none; border: none; font-size: 18px; font-weight: bold; cursor: pointer; padding: 5px 10px;">✕</button>
     </div>
-    <!-- Cho phép cuộn (overflow: auto) để khi phóng to ảnh có thể kéo xem toàn bộ -->
-    <div class="viewer-stage" style="padding: 20px; text-align: center; background: #111; flex-grow: 1; display: flex; align-items: center; justify-content: center; overflow: auto; position: relative; min-height: 400px;">
-      <img id="viewer-image" alt="Hình ảnh minh họa" style="max-width: 100%; max-height: 65vh; transition: transform 0.2s ease; object-fit: contain; display: block; margin: auto;">
+    
+    <!-- Vùng chứa ảnh cho phép cuộn cả ngang và dọc (overflow: auto) và hiển thị thanh cuộn rõ ràng -->
+    <div class="viewer-stage" style="padding: 20px; background: #111; flex-grow: 1; display: flex; align-items: center; justify-content: center; overflow: auto; position: relative; min-height: 450px;">
+      <img id="viewer-image" alt="Hình ảnh minh họa" style="transform-origin: center center; transition: transform 0.15s ease; display: block; margin: auto; max-width: none; max-height: none; width: auto; height: auto;">
     </div>
+
+    <!-- Thanh công cụ với các icon ký hiệu rõ ràng, dễ nhìn thấy -->
     <div class="viewer-controls" style="padding: 10px 20px; background: #f5f7f4; display: flex; gap: 10px; justify-content: center; border-top: 1px solid var(--line); flex-shrink: 0;">
-      <button type="button" class="button secondary" data-image-action="zoom-out" style="padding: 6px 12px; font-size: 14px;" title="Thu nhỏ"><i class="fas fa-search-minus"></i></button>
-      <button type="button" class="button secondary" data-image-action="zoom-in" style="padding: 6px 12px; font-size: 14px;" title="Phóng to"><i class="fas fa-search-plus"></i></button>
-      <button type="button" class="button secondary" data-image-action="rotate-left" style="padding: 6px 12px; font-size: 14px;" title="Xoay trái"><i class="fas fa-undo"></i></button>
-      <button type="button" class="button secondary" data-image-action="rotate-right" style="padding: 6px 12px; font-size: 14px;" title="Xoay phải"><i class="fas fa-redo"></i></button>
-      <button type="button" class="button secondary" data-image-action="reset" style="padding: 6px 12px; font-size: 14px;" title="Đặt lại gốc"><i class="fas fa-sync-alt"></i></button>
+      <button type="button" class="button secondary" data-image-action="zoom-out" style="padding: 6px 14px; font-size: 14px; font-weight: bold;" title="Thu nhỏ">🔍- Thu nhỏ</button>
+      <button type="button" class="button secondary" data-image-action="zoom-in" style="padding: 6px 14px; font-size: 14px; font-weight: bold;" title="Phóng to">🔍+ Phóng to</button>
+      <button type="button" class="button secondary" data-image-action="rotate-left" style="padding: 6px 14px; font-size: 14px; font-weight: bold;" title="Xoay trái">↶ Xoay trái</button>
+      <button type="button" class="button secondary" data-image-action="rotate-right" style="padding: 6px 14px; font-size: 14px; font-weight: bold;" title="Xoay phải">↷ Xoay phải</button>
+      <button type="button" class="button secondary" data-image-action="reset" style="padding: 6px 14px; font-size: 14px; font-weight: bold;" title="Đặt lại gốc">🔄 Đặt lại</button>
     </div>
   </div>
 </div>
@@ -377,7 +375,6 @@
     });
   }
 
-  // Hàm gắn lại sự kiện cho các modal cập nhật lý do và bấm xem ảnh
   function bindDynamicEvents() {
     document.querySelectorAll('.detail-table [data-modal]').forEach(function(button){
       if (button.hasAttribute('data-bound')) return;
@@ -418,10 +415,16 @@
 
         imageScale = 1;
         imageRotation = 0;
-        if(viewerImage) { viewerImage.src = activeImage; }
+        if(viewerImage) {
+          viewerImage.src = activeImage;
+          // Chờ ảnh load xong để thiết lập kích thước gốc chuẩn
+          viewerImage.onload = function() {
+            imageScale = 1;
+            renderImage();
+          };
+        }
         var viewerName = document.getElementById('viewer-name');
         if(viewerName) { viewerName.textContent = imageName; }
-        renderImage();
         if(imageModal) { imageModal.style.display = 'flex'; }
       });
     });
@@ -454,15 +457,27 @@
 
   function renderImage(){
     if(viewerImage) {
-      viewerImage.style.transform = 'scale(' + imageScale + ') rotate(' + imageRotation + 'deg)';
+      // Khi scale thay đổi, thay đổi trực tiếp width/height dựa trên kích thước thật để vùng chứa xuất hiện thanh cuộn ngang/dọc đầy đủ
+      if (viewerImage.naturalWidth) {
+        var currentW = viewerImage.naturalWidth * imageScale;
+        var currentH = viewerImage.naturalHeight * imageScale;
+        if (imageRotation % 180 !== 0) {
+          viewerImage.style.width = currentH + 'px';
+          viewerImage.style.height = currentW + 'px';
+        } else {
+          viewerImage.style.width = currentW + 'px';
+          viewerImage.style.height = currentH + 'px';
+        }
+      }
+      viewerImage.style.transform = 'rotate(' + imageRotation + 'deg)';
     }
   }
 
   document.querySelectorAll('[data-image-action]').forEach(function(button){
     button.addEventListener('click', function(){
       var action = button.dataset.imageAction;
-      if (action === 'zoom-in') { imageScale = Math.min(imageScale + 0.2, 3); }
-      if (action === 'zoom-out') { imageScale = Math.max(imageScale - 0.2, 0.4); }
+      if (action === 'zoom-in') { imageScale = Math.min(imageScale + 0.25, 4); }
+      if (action === 'zoom-out') { imageScale = Math.max(imageScale - 0.25, 0.3); }
       if (action === 'rotate-left') { imageRotation -= 90; }
       if (action === 'rotate-right') { imageRotation += 90; }
       if (action === 'reset') { imageScale = 1; imageRotation = 0; }
@@ -494,7 +509,7 @@
     closeAdminResetBtn.addEventListener('click', function() { adminResetModal.close(); });
   }
 
-  // --- CƠ CHẾ TỰ ĐỘNG CẬP NHẬT BẢNG CHI TIẾT NGẦM (KHÔNG CẦN F5, KHÔNG CẦN LOGIN) ---
+  // Tự động cập nhật bảng chi tiết ngầm định kỳ mỗi 5 giây
   function refreshTableData() {
     fetch('/api/table-data')
     .then(response => response.json())
@@ -517,7 +532,7 @@
               imagesHtml += '</button>';
             });
           } else {
-            imagesHtml = '<span class="muted">Chưa có</span>';
+            imagesHtml = '<span class="muted" style="color: #d9534f;">Chưa có</span>';
           }
 
           var updateInfo = '<span class="muted">Chưa cập nhật</span>';
@@ -525,7 +540,11 @@
             updateInfo = ticket.reason_updated_by + '<br>' + ticket.reason_updated_at;
           }
 
-          newHtml += '<tr>' +
+          var hasReason = ticket.reason && ticket.reason.trim() !== '';
+          var rowBg = hasReason ? 'background-color: #f2f9f5;' : 'background-color: #fdf5f5;';
+          var reasonStyle = hasReason ? 'color: #2e7d32;' : 'color: #d9534f; font-weight: 500;';
+
+          newHtml += '<tr style="' + rowBg + '">' +
             '<td>' + (index + 1) + '</td>' +
             '<td>' + ticket.unit + '</td>' +
             '<td>' + ticket.equipment_type + '</td>' +
@@ -533,7 +552,7 @@
             '<td><button class="ticket-link ticket-name" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + ticket.unit + '">' + ticket.subscriber_name + '</button></td>' +
             '<td>' + ticket.request_at + '</td>' +
             '<td class="hours">' + ticket.age_hours + '</td>' +
-            '<td class="reason-preview">' + (ticket.reason || 'Chưa xác minh') + '</td>' +
+            '<td class="reason-preview" style="' + reasonStyle + '">' + (ticket.reason || 'Chưa xác minh') + '</td>' +
             '<td class="thumbnail-cell">' + imagesHtml + '</td>' +
             '<td>' + (ticket.address || '') + '</td>' +
             '<td>' + (ticket.phone || '') + '</td>' +
@@ -544,7 +563,6 @@
         });
       }
       
-      // Chỉ thay đổi DOM và gắn lại sự kiện khi nội dung thực sự thay đổi
       if (tbody.innerHTML.trim() !== newHtml.trim()) {
         tbody.innerHTML = newHtml;
         bindDynamicEvents();
@@ -553,9 +571,8 @@
     .catch(err => console.log('Auto refresh error:', err));
   }
 
-  // Gọi định kỳ kiểm tra ngầm mỗi 5 giây
   setInterval(refreshTableData, 5000);
-  bindDynamicEvents(); // Gắn sẵn cho lần load đầu tiên
+  bindDynamicEvents();
 })();
 
 function updateOnlineStatus() {
