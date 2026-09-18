@@ -456,3 +456,37 @@ def login_logs():
         return redirect(url_for("main.dashboard"))
     logs = LoginLog.query.order_by(LoginLog.logged_at.desc()).limit(150).all()
     return render_template("login_logs.html", logs=logs)
+
+@main_bp.get("/api/table-data")
+def get_table_data():
+    """API trả về dữ liệu các phiếu tồn để cập nhật ngầm giao diện cho client (Không cần đăng nhập)"""
+    batch = UploadBatch.query.order_by(UploadBatch.uploaded_at.desc()).first()
+    if not batch:
+        return {"tickets": [], "summary_rows": [], "summary_total": {}}
+    
+    ticket_query = Ticket.query.filter_by(status=Ticket.STATUS_WAITING)
+    tickets = ticket_query.order_by(Ticket.unit, Ticket.age_hours.desc()).all()
+    
+    # Chuẩn bị dữ liệu danh sách phiếu trả về dạng JSON
+    tickets_data = []
+    for index, ticket in enumerate(tickets, 1):
+        tickets_data.append({
+            "id": ticket.id,
+            "stt": index,
+            "unit": ticket.unit,
+            "equipment_type": ticket.equipment_type,
+            "subscriber_code": ticket.subscriber_code,
+            "subscriber_name": ticket.subscriber_name,
+            "request_at": ticket.request_at.strftime('%d/%m/%Y %H:%M:%S') if ticket.request_at else "",
+            "age_hours": ticket.age_hours,
+            "reason": ticket.reason or "",
+            "address": ticket.address or "",
+            "phone": ticket.phone or "",
+            "contract_type": ticket.contract_type,
+            "status": ticket.status,
+            "reason_updated_by": ticket.reason_updated_by.email if ticket.reason_updated_by else None,
+            "reason_updated_at": ticket.reason_updated_at.strftime('%d/%m/%Y %H:%M:%S') if ticket.reason_updated_at else None,
+            "images": [{"id": img.id, "url": url_for('main.ticket_image', image_id=img.id), "name": img.original_filename} for img in ticket.images]
+        })
+        
+    return {"tickets": tickets_data}
