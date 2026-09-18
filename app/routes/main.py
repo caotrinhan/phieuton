@@ -14,7 +14,6 @@ from ..time_utils import local_now
 
 main_bp = Blueprint("main", __name__)
 
-# Từ điển lưu trữ danh sách người đang xem trực tuyến trên RAM server: { identifier: {"name": str, "last_active": datetime} }
 ACTIVE_USERS = {}
 
 
@@ -31,7 +30,6 @@ def _image_allowed(filename: str) -> bool:
 
 
 def _get_allowed_units() -> list:
-    """Hỗ trợ lấy danh sách các tổ kỹ thuật thuộc quyền quản lý của user hiện tại"""
     if current_user.is_admin:
         return []
     
@@ -42,7 +40,6 @@ def _get_allowed_units() -> list:
     ).all()
     
     allowed = [m.to_ky_thuat for m in mappings]
-    
     if not allowed:
         allowed = [current_user.unit]
         
@@ -51,7 +48,6 @@ def _get_allowed_units() -> list:
 
 @main_bp.before_request
 def track_active_users():
-    """Tự động ghi nhận hoặc cập nhật trạng thái online của người truy cập (cả user và khách qua IP)"""
     if request.path.startswith('/static') or request.path.startswith('/ticket-images') or request.path.startswith('/api/ping'):
         return
         
@@ -73,7 +69,6 @@ def track_active_users():
 
 @main_bp.get("/api/ping")
 def ping_online():
-    """Xử lý tín hiệu leave hoặc heartbeat ngầm từ trình duyệt để duy trì trạng thái và trả về danh sách online"""
     if request.args.get('action') == 'leave':
         if current_user.is_authenticated:
             identifier = f"user_{current_user.id}"
@@ -87,7 +82,7 @@ def ping_online():
         
     if current_user.is_authenticated:
         identifier = f"user_{current_user.id}"
-        display_name = current_user.email  # <--- Sửa ở đây thành chỉ lấy email của user
+        display_name = current_user.email
     else:   
         ip = request.headers.get('X-Forwarded-For', request.remote_addr)
         if ip and ',' in ip:
@@ -100,7 +95,6 @@ def ping_online():
         "last_active": datetime.now()
     }
     
-    # RÚT NGẮN XUỐNG 15 GIÂY: Tự động loại bỏ phiên nếu không nhận được tín hiệu làm mới trong 15 giây qua
     threshold = datetime.now() - timedelta(seconds=15)
     expired_keys = [k for k, v in ACTIVE_USERS.items() if v["last_active"] < threshold]
     for k in expired_keys:
@@ -140,7 +134,6 @@ def dashboard():
             item["camera"] += 1
         item["reported"] += bool(ticket.reason and ticket.reason.strip())
         
-   # Sắp xếp các đơn vị theo Tổng (total) giảm dần, nếu trùng tổng thì có thể giữ nguyên hoặc sắp xếp theo tên đơn vị phụ
     sorted_units = sorted(units.items(), key=lambda x: x[1]["total"], reverse=True)
 
     summary_rows = [{"stt": index, "unit": unit, **item} for index, (unit, item) in enumerate(sorted_units, 1)]
@@ -457,9 +450,10 @@ def login_logs():
     logs = LoginLog.query.order_by(LoginLog.logged_at.desc()).limit(150).all()
     return render_template("login_logs.html", logs=logs)
 
+
 @main_bp.get("/api/table-data")
 def get_table_data():
-    """API trả về dữ liệu các phiếu tồn để cập nhật ngầm giao diện cho client (Không cần đăng nhập)"""
+    """API trả về dữ liệu các phiếu tồn để cập nhật ngầm giao diện cho client"""
     batch = UploadBatch.query.order_by(UploadBatch.uploaded_at.desc()).first()
     if not batch:
         return {"tickets": [], "summary_rows": [], "summary_total": {}}
@@ -467,7 +461,6 @@ def get_table_data():
     ticket_query = Ticket.query.filter_by(status=Ticket.STATUS_WAITING)
     tickets = ticket_query.order_by(Ticket.unit, Ticket.age_hours.desc()).all()
     
-    # Chuẩn bị dữ liệu danh sách phiếu trả về dạng JSON
     tickets_data = []
     for index, ticket in enumerate(tickets, 1):
         tickets_data.append({

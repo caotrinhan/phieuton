@@ -208,7 +208,6 @@
       </thead>
       <tbody>
         {% for ticket in tickets %}
-        <!-- PHÂN MÀU DÒNG THEO TRẠNG THÁI LÝ DO: Đã có lý do (xanh nhạt), Chưa có lý do (đỏ danger nhạt) -->
         <tr style="{% if ticket.reason and ticket.reason.strip() %}background-color: #f2f9f5;{% else %}background-color: #fdf5f5;{% endif %}">
           <td>{{ loop.index }}</td>
           <td>{{ ticket.unit }}</td>
@@ -218,11 +217,11 @@
           <td>{{ ticket.request_at.strftime('%d/%m/%Y %H:%M:%S') }}</td>
           <td class="hours">{{ ticket.age_hours }}</td>
           <td class="reason-preview" style="{% if not ticket.reason or not ticket.reason.strip() %}color: #d9534f; font-weight: 500;{% else %}color: #2e7d32;{% endif %}">
-  {{ ticket.reason or 'Chưa xác minh' }}
-  {% if ticket.reason_updated_by and not ticket.reason.endswith(')') %}
-    <br><span style="font-size: 11px; color: #666; font-style: italic;">({{ ticket.reason_updated_by.email }} - {{ ticket.reason_updated_at.strftime('%d/%m/%Y %H:%M:%S') }})</span>
-  {% endif %}
-</td>
+            {{ ticket.reason or 'Chưa xác minh' }}
+            {% if ticket.reason_updated_by and ticket.reason_updated_at %}
+              <br><span style="font-size: 11px; color: #666; font-style: italic;">({{ ticket.reason_updated_by.email }} - {{ ticket.reason_updated_at.strftime('%d/%m/%Y %H:%M:%S') }})</span>
+            {% endif %}
+          </td>
           <td class="thumbnail-cell">
             {% for image in ticket.images %}
             <button class="thumbnail-button" type="button" data-image-url="{{ url_for('main.ticket_image', image_id=image.id) }}" data-image-name="{{ image.original_filename }}" style="background: none; border: 1px solid var(--line); border-radius: 4px; padding: 2px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin-right: 4px; margin-bottom: 4px;" title="{{ image.original_filename }}">
@@ -282,7 +281,7 @@
 </dialog>
 {% endfor %}
 
-<!-- Khung xem ảnh lớn (Đã tinh chỉnh để hỗ trợ cuộn cả hai chiều NGANG và DỌC khi phóng to ảnh) -->
+<!-- Khung xem ảnh lớn -->
 <div class="image-viewer" id="image-viewer" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 99999; justify-content: center; align-items: center; padding: 20px;">
   <div class="image-viewer-card" style="background: #fff; width: 100%; max-width: 900px; max-height: 92vh; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
     <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: #f5f7f4; border-bottom: 1px solid var(--line); flex-shrink: 0;">
@@ -293,18 +292,16 @@
       <button class="modal-close" type="button" id="closeImageViewerBtn" style="background: none; border: none; font-size: 18px; font-weight: bold; cursor: pointer; padding: 5px 10px;">✕</button>
     </div>
     
-    <!-- Vùng chứa ảnh cho phép cuộn cả ngang và dọc (overflow: auto) và hiển thị thanh cuộn rõ ràng -->
     <div class="viewer-stage" style="padding: 20px; background: #111; flex-grow: 1; display: flex; align-items: center; justify-content: center; overflow: auto; position: relative; min-height: 450px;">
       <img id="viewer-image" alt="Hình ảnh minh họa" style="transform-origin: center center; transition: transform 0.15s ease; display: block; margin: auto; max-width: none; max-height: none; width: auto; height: auto;">
     </div>
 
-    <!-- Thanh công cụ với các icon ký hiệu rõ ràng, dễ nhìn thấy -->
     <div class="viewer-controls" style="padding: 10px 20px; background: #f5f7f4; display: flex; gap: 10px; justify-content: center; border-top: 1px solid var(--line); flex-shrink: 0;">
       <button type="button" class="button secondary" data-image-action="zoom-out" style="padding: 6px 14px; font-size: 14px; font-weight: bold;" title="Thu nhỏ">🔍- Thu nhỏ</button>
-      <button type="button" class="button secondary" data-image-action="zoom-in" style="padding: 6px 14px; font-size: 14px; font-weight: bold;" title="Phóng to">🔍+ Phóng to</button>
-      <button type="button" class="button secondary" data-image-action="rotate-left" style="padding: 6px 14px; font-size: 14px; font-weight: bold;" title="Xoay trái">↶ Xoay trái</button>
-      <button type="button" class="button secondary" data-image-action="rotate-right" style="padding: 6px 14px; font-size: 14px; font-weight: bold;" title="Xoay phải">↷ Xoay phải</button>
-      <button type="button" class="button secondary" data-image-action="reset" style="padding: 6px 14px; font-size: 14px; font-weight: bold;" title="Đặt lại gốc">🔄 Đặt lại</button>
+      <button type="button" class="button secondary" data-image-action="zoom-in" style="padding: 6px 14px; font-size: 14px; font-weight: bold;" title="🔍+ Phóng to">🔍+ Phóng to</button>
+      <button type="button" class="button secondary" data-image-action="rotate-left" style="padding: 6px 14px; font-size: 14px; font-weight: bold;" title="↶ Xoay trái">↶ Xoay trái</button>
+      <button type="button" class="button secondary" data-image-action="rotate-right" style="padding: 6px 14px; font-size: 14px; font-weight: bold;" title="↷ Xoay phải">↷ Xoay phải</button>
+      <button type="button" class="button secondary" data-image-action="reset" style="padding: 6px 14px; font-size: 14px; font-weight: bold;" title="🔄 Đặt lại">🔄 Đặt lại</button>
     </div>
   </div>
 </div>
@@ -422,7 +419,6 @@
         imageRotation = 0;
         if(viewerImage) {
           viewerImage.src = activeImage;
-          // Chờ ảnh load xong để thiết lập kích thước gốc chuẩn
           viewerImage.onload = function() {
             imageScale = 1;
             renderImage();
@@ -462,7 +458,6 @@
 
   function renderImage(){
     if(viewerImage) {
-      // Khi scale thay đổi, thay đổi trực tiếp width/height dựa trên kích thước thật để vùng chứa xuất hiện thanh cuộn ngang/dọc đầy đủ
       if (viewerImage.naturalWidth) {
         var currentW = viewerImage.naturalWidth * imageScale;
         var currentH = viewerImage.naturalHeight * imageScale;
@@ -515,7 +510,6 @@
   }
 
   // Tự động cập nhật bảng chi tiết ngầm định kỳ mỗi 5 giây
- // Tự động cập nhật bảng chi tiết ngầm định kỳ mỗi 5 giây
   function refreshTableData() {
     fetch('/api/table-data')
     .then(response => response.json())
@@ -550,9 +544,8 @@
           var rowBg = hasReason ? 'background-color: #f2f9f5;' : 'background-color: #fdf5f5;';
           var reasonStyle = hasReason ? 'color: #2e7d32;' : 'color: #d9534f; font-weight: 500;';
 
-          // Xử lý hiển thị lý do kèm chữ ký email và ngày giờ cập nhật đồng bộ với giao diện chính
           var reasonTextDisp = ticket.reason || 'Chưa xác minh';
-          if (ticket.reason_updated_by && (!ticket.reason || !ticket.reason.includes('('))) {
+          if (ticket.reason_updated_by && ticket.reason_updated_at) {
             reasonTextDisp += '<br><span style="font-size: 11px; color: #666; font-style: italic;">(' + ticket.reason_updated_by + ' - ' + ticket.reason_updated_at + ')</span>';
           }
 
@@ -608,31 +601,5 @@ setInterval(updateOnlineStatus, 10000);
 window.addEventListener('beforeunload', function () {
     navigator.sendBeacon('/api/ping?action=leave');
 });
-var hasReason = ticket.reason && ticket.reason.trim() !== '';
-var rowBg = hasReason ? 'background-color: #f2f9f5;' : 'background-color: #fdf5f5;';
-var reasonStyle = hasReason ? 'color: #2e7d32;' : 'color: #d9534f; font-weight: 500;';
-
-// Xử lý hiển thị lý do kèm chữ ký email và ngày giờ cập nhật
-var reasonTextDisp = ticket.reason || 'Chưa xác minh';
-if (ticket.reason_updated_by) {
-    reasonTextDisp += '<br><span style="font-size: 11px; color: #666; font-style: italic;">(' + ticket.reason_updated_by + ' - ' + ticket.reason_updated_at + ')</span>';
-}
-
-newHtml += '<tr style="' + rowBg + '">' +
-    '<td>' + (index + 1) + '</td>' +
-    '<td>' + ticket.unit + '</td>' +
-    '<td>' + ticket.equipment_type + '</td>' +
-    '<td><button class="ticket-link" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + ticket.unit + '">' + ticket.subscriber_code + '</button></td>' +
-    '<td><button class="ticket-link ticket-name" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + ticket.unit + '">' + ticket.subscriber_name + '</button></td>' +
-    '<td>' + ticket.request_at + '</td>' +
-    '<td class="hours">' + ticket.age_hours + '</td>' +
-    '<td class="reason-preview" style="' + reasonStyle + '">' + reasonTextDisp + '</td>' +
-    '<td class="thumbnail-cell">' + imagesHtml + '</td>' +
-    '<td>' + (ticket.address || '') + '</td>' +
-    '<td>' + (ticket.phone || '') + '</td>' +
-    '<td>' + ticket.contract_type + '</td>' +
-    '<td><span class="status waiting">' + ticket.status + '</span></td>' +
-    '<td class="updated">' + updateInfo + '</td>' +
-'</tr>';
 </script>
 {% endblock %}
