@@ -1,36 +1,39 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<!-- Bổ sung CSS tùy chỉnh để căn giữa bảng, giảm font chi tiết và wrap text cột đơn vị -->
+<!-- Bổ sung CSS tùy chỉnh cho bảng -->
 <style>
-  /* Căn giữa các bảng và khung bao ngoài */
-  .summary-panel, .detail-panel {
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
-  .table-wrap {
-    display: flex;
-    justify-content: center;
-  }
-  .summary-panel table, .detail-panel table {
-    margin-left: auto;
-    margin-right: auto;
+  /* Căn giữa nội dung cho toàn bộ ô trong bảng Tổng hợp và Chi tiết */
+  .summary-panel table th,
+  .summary-panel table td,
+  .detail-panel table th,
+  .detail-panel table td {
+    text-align: center;
+    vertical-align: middle;
   }
 
-  /* Giảm font chữ và tối ưu hiển thị cho bảng chi tiết */
-  .detail-table {
-    font-size: 11px !important; /* Giảm cỡ chữ xuống nhỏ gọn hơn */
-  }
-  .detail-table th, .detail-table td {
-    padding: 6px 8px !important; /* Thu gọn khoảng đệm ô */
+  /* Giữ canh trái cho các cột nội dung dài để dễ đọc */
+  .detail-panel table td:nth-child(5), /* TEN_TB */
+  .detail-panel table td:nth-child(8), /* Lý do tồn */
+  .detail-panel table td:nth-child(10) /* Diachi Ld */ {
+    text-align: left;
   }
 
-  /* Thu ngắn chiều dài cột DONVI_XULY_PHIEU và bật ngắt dòng (wrap text) */
-  .detail-table th:nth-child(2),
-  .detail-table td:nth-child(2) {
-    max-width: 110px !important; /* Giới hạn chiều rộng cột */
-    white-space: normal !important; /* Cho phép rớt dòng */
-    word-break: break-word; /* Tự động ngắt từ dài */
+  /* Cố định chiều rộng cột Ngày lập phiếu (Cột 6) để làm mốc */
+  .detail-panel table th:nth-child(6),
+  .detail-panel table td:nth-child(6) {
+    width: 130px;
+    white-space: nowrap;
+  }
+
+  /* Cài đặt Wrap Text và áp dụng chiều rộng tương ứng cho cột Đơn vị xử lý phiếu (Cột 2) */
+  .detail-panel table th:nth-child(2),
+  .detail-panel table td:nth-child(2) {
+    width: 130px;
+    max-width: 130px;
+    word-break: break-word;
+    white-space: normal;
+    text-align: center;
   }
 </style>
 
@@ -158,7 +161,7 @@
 </section>
 
 <!-- Bảng Tổng hợp -->
-<section class="panel summary-panel" style="margin-bottom: 20px; width: fit-content; margin-left: auto; margin-right: auto;">
+<section class="panel summary-panel" style="margin-bottom: 20px;">
   <div class="panel-title" style="padding: 12px 16px;">
     <h2>Tổng hợp theo đơn vị</h2>
     <span style="font-size: 12px; color: #666;">{{ summary_rows|length }} đơn vị</span>
@@ -211,7 +214,7 @@
 </section>
 
 <!-- Bảng Chi tiết -->
-<section class="panel detail-panel" style="width: fit-content; margin-left: auto; margin-right: auto;">
+<section class="panel detail-panel">
   <div class="panel-title" style="padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
     <div>
       <h2 style="margin-bottom: 2px;">Chi tiết phiếu tồn</h2>
@@ -252,13 +255,13 @@
           <td class="reason-preview" style="{% if not ticket.reason or not ticket.reason.strip() %}color: #d9534f; font-weight: 500;{% else %}color: #2e7d32;{% endif %}">
             {{ ticket.reason or 'Chưa xác minh' }}
             {% if ticket.reason_updated_by and ticket.reason_updated_at %}
-              <br><span style="font-size: 11px; color: #666; font-style: italic;">({{ ticket.reason_updated_by.email }} - {{ ticket.reason_updated_at.strftime('%d/%m/%Y %H:%M:%S') }})</span>
+              <br><span style="font-size: 12px; color: #666; font-style: italic;">({{ ticket.reason_updated_by.email }} - {{ ticket.reason_updated_at.strftime('%d/%m/%Y %H:%M:%S') }})</span>
             {% endif %}
           </td>
           <td class="thumbnail-cell">
             {% for image in ticket.images %}
             <button class="thumbnail-button" type="button" data-image-url="{{ url_for('main.ticket_image', image_id=image.id) }}" data-image-name="{{ image.original_filename }}" style="background: none; border: 1px solid var(--line); border-radius: 4px; padding: 2px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin-right: 4px; margin-bottom: 4px;" title="{{ image.original_filename }}">
-              <img src="{{ url_for('main.ticket_image', image_id=image.id) }}" alt="{{ image.original_filename }}" style="width: 35px; height: 35px; object-fit: cover; border-radius: 2px; display: block;">
+              <img src="{{ url_for('main.ticket_image', image_id=image.id) }}" alt="{{ image.original_filename }}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 2px; display: block;">
             </button>
             {% else %}
             <span class="muted" style="color: #d9534f;">Chưa có</span>
@@ -561,7 +564,7 @@
           if (ticket.images && ticket.images.length > 0) {
             ticket.images.forEach(function(img) {
               imagesHtml += '<button class="thumbnail-button" type="button" data-image-url="' + img.url + '" data-image-name="' + img.name + '" style="background: none; border: 1px solid var(--line); border-radius: 4px; padding: 2px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin-right: 4px; margin-bottom: 4px;" title="' + img.name + '">';
-              imagesHtml += '<img src="' + img.url + '" alt="' + img.name + '" style="width: 35px; height: 35px; object-fit: cover; border-radius: 2px; display: block;">';
+              imagesHtml += '<img src="' + img.url + '" alt="' + img.name + '" style="width: 40px; height: 40px; object-fit: cover; border-radius: 2px; display: block;">';
               imagesHtml += '</button>';
             });
           } else {
@@ -579,7 +582,7 @@
 
           var reasonTextDisp = ticket.reason || 'Chưa xác minh';
           if (ticket.reason_updated_by && ticket.reason_updated_at) {
-            reasonTextDisp += '<br><span style="font-size: 11px; color: #666; font-style: italic;">(' + ticket.reason_updated_by + ' - ' + ticket.reason_updated_at + ')</span>';
+            reasonTextDisp += '<br><span style="font-size: 12px; color: #666; font-style: italic;">(' + ticket.reason_updated_by + ' - ' + ticket.reason_updated_at + ')</span>';
           }
 
           newHtml += '<tr style="' + rowBg + '">' +
