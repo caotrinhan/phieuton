@@ -16,7 +16,7 @@
     <h1 style="margin-bottom: 6px;">Phiếu tồn trên 48 giờ</h1>
     <p style="margin: 0; color: #666; font-size: 13px;">
       {% if batch %}
-        Dữ liệu xuất từ hệ thống OneBss (2 link bên dưới) và upload lên hệ thống này lúc <strong>{{ batch.uploaded_at.strftime('%d/%m/%Y %H:%M:%S') }}</strong> · Người upload: <strong>{{ batch.uploaded_by.full_name }}</strong>
+        Dữ liệu xuất từ hệ thống OneBss (2 link bên dưới) và upload lên hệ thống này lúc <strong>{{ batch.uploaded_at.strftime('%d/%m/%Y %H:%M:%S') }}</strong>·<hr/> Người upload: <strong>{{ batch.uploaded_by.full_name }}</strong>
       {% else %}
         Chưa có dữ liệu
       {% endif %}
@@ -139,7 +139,7 @@
       <thead>
         <tr>
           <th>STT</th>
-          <th>DONVI_XULY_PHIEU</th>
+          <th>Đơn vị</th>
           <th>SL_Fiber</th>
           <th>SL_MyTV</th>
           <th>SL_Mesh</th>
@@ -158,7 +158,8 @@
           <td>{{ row.mytv }}</td>
           <td>{{ row.mesh }}</td>
           <td>{{ row.camera }}</td>
-          <td>{{ row.total }}</td>
+          <!-- CỘT TỔNG: Làm nổi bật với chữ đậm, màu đỏ và nền xám nhạt -->
+          <td style="font-weight: bold; color: #d9534f; background-color: #fcf8e3;">{{ row.total }}</td>
           <td>{{ row.reported }}</td>
           <td>{{ (row.reported * 100 / row.total)|round(2) }}</td>
         </tr>
@@ -172,7 +173,8 @@
           <td>{{ summary_total.mytv }}</td>
           <td>{{ summary_total.mesh }}</td>
           <td>{{ summary_total.camera }}</td>
-          <td>{{ summary_total.total }}</td>
+          <!-- DÒNG TỔNG CỘNG CỦA CỘT TỔNG -->
+          <td style="font-weight: bold; color: #d9534f; background-color: #fcf8e3;">{{ summary_total.total }}</td>
           <td>{{ summary_total.reported }}</td>
           <td>{{ (summary_total.reported * 100 / summary_total.total)|round(2) if summary_total.total else 0 }}</td>
         </tr>
