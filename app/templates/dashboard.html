@@ -16,7 +16,7 @@
     <h1 style="margin-bottom: 6px;">Phiếu tồn trên 48 giờ</h1>
     <p style="margin: 0; color: #666; font-size: 13px;">
       {% if batch %}
-        Dữ liệu OneBss lúc <strong>{{ batch.uploaded_at.strftime('%d/%m/%Y %H:%M:%S') }}</strong> · Người upload: <strong>{{ batch.uploaded_by.full_name }}</strong>
+        Dữ liệu xuất từ hệ thống OneBss (2 link bên dưới) và upload lên hệ thống này lúc <strong>{{ batch.uploaded_at.strftime('%d/%m/%Y %H:%M:%S') }}</strong> · Người upload: <strong>{{ batch.uploaded_by.full_name }}</strong>
       {% else %}
         Chưa có dữ liệu
       {% endif %}
@@ -186,7 +186,7 @@
   <div class="panel-title" style="padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
     <div>
       <h2 style="margin-bottom: 2px;">Chi tiết phiếu tồn</h2>
-      <p class="panel-help" style="margin: 0; font-size: 12px; color: #666;">Nhấn vào mã/tên thuê bao để cập nhật lý do tồn hoặc xem hình ảnh minh họa.</p>
+      <p class="panel-help" style="margin: 0; font-size: 12px; color: #666;">Nhấn vào mã/tên thuê bao để cập nhật lý do tồn/hình ảnh; Nhấn vào ảnh để xem phóng to ảnh.</p>
     </div>
     <span style="font-size: 12px; font-weight: 600; color: #555;">{{ tickets|length }} dòng</span>
   </div>

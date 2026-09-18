@@ -140,7 +140,10 @@ def dashboard():
             item["camera"] += 1
         item["reported"] += bool(ticket.reason and ticket.reason.strip())
         
-    summary_rows = [{"stt": index, "unit": unit, **item} for index, (unit, item) in enumerate(units.items(), 1)]
+   # Sắp xếp các đơn vị theo Tổng (total) giảm dần, nếu trùng tổng thì có thể giữ nguyên hoặc sắp xếp theo tên đơn vị phụ
+    sorted_units = sorted(units.items(), key=lambda x: x[1]["total"], reverse=True)
+
+    summary_rows = [{"stt": index, "unit": unit, **item} for index, (unit, item) in enumerate(sorted_units, 1)]
     summary_total = {
         "total": sum(row["total"] for row in summary_rows),
         "fiber": sum(row["fiber"] for row in summary_rows),
