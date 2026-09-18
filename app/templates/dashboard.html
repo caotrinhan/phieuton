@@ -217,8 +217,12 @@
           <td><button class="ticket-link ticket-name" type="button" data-modal="reason-modal-{{ ticket.id }}" data-ticket-unit="{{ ticket.unit }}">{{ ticket.subscriber_name }}</button></td>
           <td>{{ ticket.request_at.strftime('%d/%m/%Y %H:%M:%S') }}</td>
           <td class="hours">{{ ticket.age_hours }}</td>
-          <td class="reason-preview" style="{% if not ticket.reason or not ticket.reason.strip() %}color: #d9534f; font-weight: 500;{% else %}color: #2e7d32;{% endif %}">{{ ticket.reason or 'Chưa xác minh' }}</td>
-          <td class="thumbnail-cell">
+<td class="reason-preview" style="{% if not ticket.reason or not ticket.reason.strip() %}color: #d9534f; font-weight: 500;{% else %}color: #2e7d32;{% endif %}">
+  {{ ticket.reason or 'Chưa xác minh' }}
+  {% if ticket.reason_updated_by %}
+    <br><span style="font-size: 11px; color: #666; font-style: italic;">({{ ticket.reason_updated_by.email }} - {{ ticket.reason_updated_at.strftime('%d/%m/%Y %H:%M:%S') }})</span>
+  {% endif %}
+</td>          <td class="thumbnail-cell">
             {% for image in ticket.images %}
             <button class="thumbnail-button" type="button" data-image-url="{{ url_for('main.ticket_image', image_id=image.id) }}" data-image-name="{{ image.original_filename }}" style="background: none; border: 1px solid var(--line); border-radius: 4px; padding: 2px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin-right: 4px; margin-bottom: 4px;" title="{{ image.original_filename }}">
               <img src="{{ url_for('main.ticket_image', image_id=image.id) }}" alt="{{ image.original_filename }}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 2px; display: block;">
@@ -596,5 +600,31 @@ setInterval(updateOnlineStatus, 10000);
 window.addEventListener('beforeunload', function () {
     navigator.sendBeacon('/api/ping?action=leave');
 });
+var hasReason = ticket.reason && ticket.reason.trim() !== '';
+var rowBg = hasReason ? 'background-color: #f2f9f5;' : 'background-color: #fdf5f5;';
+var reasonStyle = hasReason ? 'color: #2e7d32;' : 'color: #d9534f; font-weight: 500;';
+
+// Xử lý hiển thị lý do kèm chữ ký email và ngày giờ cập nhật
+var reasonTextDisp = ticket.reason || 'Chưa xác minh';
+if (ticket.reason_updated_by) {
+    reasonTextDisp += '<br><span style="font-size: 11px; color: #666; font-style: italic;">(' + ticket.reason_updated_by + ' - ' + ticket.reason_updated_at + ')</span>';
+}
+
+newHtml += '<tr style="' + rowBg + '">' +
+    '<td>' + (index + 1) + '</td>' +
+    '<td>' + ticket.unit + '</td>' +
+    '<td>' + ticket.equipment_type + '</td>' +
+    '<td><button class="ticket-link" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + ticket.unit + '">' + ticket.subscriber_code + '</button></td>' +
+    '<td><button class="ticket-link ticket-name" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + ticket.unit + '">' + ticket.subscriber_name + '</button></td>' +
+    '<td>' + ticket.request_at + '</td>' +
+    '<td class="hours">' + ticket.age_hours + '</td>' +
+    '<td class="reason-preview" style="' + reasonStyle + '">' + reasonTextDisp + '</td>' +
+    '<td class="thumbnail-cell">' + imagesHtml + '</td>' +
+    '<td>' + (ticket.address || '') + '</td>' +
+    '<td>' + (ticket.phone || '') + '</td>' +
+    '<td>' + ticket.contract_type + '</td>' +
+    '<td><span class="status waiting">' + ticket.status + '</span></td>' +
+    '<td class="updated">' + updateInfo + '</td>' +
+'</tr>';
 </script>
 {% endblock %}
