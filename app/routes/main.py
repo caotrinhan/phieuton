@@ -49,7 +49,8 @@ def _get_allowed_units() -> list:
 def load_new_filtered_tickets(ca_mau_path, bac_lieu_path):
     """
     Đọc và gộp 2 file template mới của Cà Mau và Bạc Liêu,
-    lọc theo điều kiện: trangthai_hd == 'Chua hoan cong' và tien_trinh == 'Đã giao thi công'.
+    lọc theo điều kiện: trangthai_hd == 'Chua hoan cong', tien_trinh == 'Đã giao thi công'
+    và chỉ lấy các phiếu có thời gian tồn > 48 giờ.
     """
     df_cm = pd.read_excel(ca_mau_path)
     df_bl = pd.read_excel(bac_lieu_path)
@@ -74,6 +75,10 @@ def load_new_filtered_tickets(ca_mau_path, bac_lieu_path):
         age_hours = round((now - request_at.tz_localize(None) if request_at.tzinfo else now - request_at).total_seconds() / 3600, 2)
         if age_hours < 0:
             age_hours = 0.0
+
+        # Chỉ lấy các phiếu có thời gian tồn trên 48 giờ (> 48h)
+        if age_hours <= 48:
+            continue
 
         record = {
             "province": str(row.get('tentinh', '')).strip(),
@@ -397,8 +402,9 @@ def upload_new_template():
             ticket.subscriber_code: ticket
             for ticket in Ticket.query.filter(Ticket.subscriber_code.in_(current_codes)).all()
         }
-        new_count = sum(record["subscriber_code"] not in existing_tickets for record in records)
-        existing_count = len(records) - new_count
+        
+        new_count = 0
+        existing_count = 0
         
         batch = UploadBatch(
             uploaded_at=now,
@@ -407,9 +413,9 @@ def upload_new_template():
             bac_lieu_filename=bac_lieu_file.filename,
             total_tickets=total,
             over_48h_tickets=len(records),
-            new_tickets=new_count,
+            new_tickets=0,  # Sẽ cập nhật lại sau vòng lặp
             status_changed_tickets=status_changed_count,
-            existing_tickets=existing_count,
+            existing_tickets=0, # Sẽ cập nhật lại sau vòng lặp
         )
         db.session.add(batch)
         db.session.flush()
@@ -417,6 +423,8 @@ def upload_new_template():
         for record in records:
             ticket = existing_tickets.get(record["subscriber_code"])
             if ticket is None:
+                # Nếu chưa có trong DB -> Tạo mới và gán status là DANG_CHO_XAC_MINH (STATUS_WAITING)
+                new_count += 1
                 record["status"] = Ticket.STATUS_WAITING
                 ticket = Ticket(
                     batch_id=batch.id,
@@ -426,17 +434,25 @@ def upload_new_template():
                     **record,
                 )
                 db.session.add(ticket)
-                continue
-
-            ticket.latest_batch_id = batch.id
-            ticket.last_seen_at = now
-            if ticket.status != Ticket.STATUS_WAITING:
-                ticket.status = Ticket.STATUS_WAITING
-                ticket.status_changed_at = now
-            for field, value in record.items():
-                if field != "status":
-                    setattr(ticket, field, value)
+            else:
+                # Nếu đã tồn tại trong DB
+                existing_count += 1
+                ticket.latest_batch_id = batch.id
+                ticket.last_seen_at = now
+                
+                # Nếu status đang là 'ĐANG CHỜ XÁC MINH' thì giữ nguyên, không đổi trạng thái
+                if ticket.status != Ticket.STATUS_WAITING:
+                    ticket.status = Ticket.STATUS_WAITING
+                    ticket.status_changed_at = now
                     
+                for field, value in record.items():
+                    if field != "status":
+                        setattr(ticket, field, value)
+                        
+        # Cập nhật lại số lượng chính xác vào batch
+        batch.new_tickets = new_count
+        batch.existing_tickets = existing_count
+        
         db.session.commit()
         flash(
             f"Upload Template Mới thành công: thêm mới {new_count} phiếu; chuyển trạng thái khác {status_changed_count} phiếu; "
