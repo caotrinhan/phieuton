@@ -62,8 +62,8 @@
     {% if batch %}
     <div style="margin-top: 6px; font-size: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
       <span style="font-weight: 600; color: var(--ink);">Link xuất OneBss:</span>
-      <a href="https://onebss.vnpt.vn/#/report/bi?path=TINH/CAMAU/TRACUU/TON_RP_PHIEUTON_CHUA_XULY&name=10._KS01_-_Phieu_ton_theo_don_vi_-_chua_xu_ly" target="_blank" style="color: var(--green); text-decoration: underline;">[ Site CMU ]</a>
-      <a href="https://onebss.vnpt.vn/#/report/bi?path=TINH/BACLIEU/BACLIEU/BAOCAO/BC_PTTB_TTVT/BC_BLU_TK_PTM_TB_TTVT&name=63._BLU_Thong_ke_phat_trien_moi_thue_bao_-_TTVT_-_Chi_tiet" target="_blank" style="color: var(--green); text-decoration: underline;">[ Site BLU ]</a>
+     
+      <a href="https://onebss.vnpt.vn/#/report/bi?path=PHATTRIENTHUEBAO/BIENDONGPHATTRIENTHUEBAO/RP-BSS-28332&name=46. Biến động phát triển thuê bao - Báo cáo phát triển mới (bao gồm thuê bao dùng thử chuyển dùng thật)" target="_blank" style="color: var(--green); text-decoration: underline;">[ Site BLU ]</a>
     </div>
     {% endif %}
   </div>
@@ -161,8 +161,8 @@
 <!-- Thông báo kết quả upload -->
 <section class="panel upload-result" style="padding: 8px 16px; font-size: 13px; margin-bottom: 16px; background: #fff; border: 1px solid var(--line); border-radius: 6px;">
   <span><strong>Kết quả upload gần nhất:</strong> Phát sinh mới <span style="color: #d35400; font-weight: 600;">{{ batch.new_tickets }}</span> phiếu · Đã xử lý <span style="color: #27ae60; font-weight: 600;">{{ batch.status_changed_tickets }}</span> phiếu · Phiếu cũ <span style="color: #7f8c8d; font-weight: 600;">{{ batch.existing_tickets }}</span> phiếu.</span>
-</section>
-
+  </section>
+<p>Do thay đổi nguồn xuất dữ liệu từ OneBss (từ báo cáo của tỉnh sang báo cáo OneBss của Tập đoàn, nên tất cả các phiếu tồn hiện hữu ở các dịch vụ hiển thị đầy đủ</p>
 <!-- Bảng Tổng hợp -->
 <section class="panel summary-panel" style="margin-bottom: 20px;">
   <div class="panel-title" style="padding: 12px 16px;">
