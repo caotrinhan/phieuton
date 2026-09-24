@@ -46,6 +46,52 @@ def _get_allowed_units() -> list:
     return allowed
 
 
+def load_new_filtered_tickets(ca_mau_path, bac_lieu_path):
+    """
+    Đọc và gộp 2 file template mới của Cà Mau và Bạc Liêu,
+    lọc theo điều kiện: trangthai_hd == 'Chua hoan cong' và tien_trinh == 'Đã giao thi công'.
+    """
+    df_cm = pd.read_excel(ca_mau_path)
+    df_bl = pd.read_excel(bac_lieu_path)
+    
+    df = pd.concat([df_cm, df_bl], ignore_index=True)
+    
+    df_filtered = df[
+        (df['trangthai_hd'].astype(str).str.strip().str.lower() == "chua hoan cong") & 
+        (df['tien_trinh'].astype(str).str.strip() == "Đã giao thi công")
+    ].copy()
+    
+    records = []
+    now = local_now()
+    
+    for _, row in df_filtered.iterrows():
+        request_at = pd.to_datetime(row.get('ngay_yeucau'), format='%d/%m/%Y %H:%M:%S', errors='coerce')
+        if pd.isna(request_at):
+            request_at = pd.to_datetime(row.get('ngay_yeucau'), errors='coerce')
+        if pd.isna(request_at):
+            request_at = now
+            
+        age_hours = round((now - request_at.tz_localize(None) if request_at.tzinfo else now - request_at).total_seconds() / 3600, 2)
+        if age_hours < 0:
+            age_hours = 0.0
+
+        record = {
+            "province": str(row.get('tentinh', '')).strip(),
+            "contract_type": str(row.get('loai_hopdong', '')).strip(),
+            "equipment_type": str(row.get('tenloai_tb', '')).strip(),
+            "subscriber_code": str(row.get('ma_tb', '')).strip(),
+            "subscriber_name": str(row.get('ten_kh', '')).strip(),
+            "request_at": request_at,
+            "age_hours": age_hours,
+            "address": str(row.get('diachi_lapdat', '')).strip(),
+            "phone": str(row.get('sodt_lh', '')).strip(),
+            "unit": str(row.get('donvi_lapdat', '')).strip(),
+        }
+        records.append(record)
+        
+    return records, len(df)
+
+
 @main_bp.before_request
 def track_active_users():
     if request.path.startswith('/static') or request.path.startswith('/ticket-images') or request.path.startswith('/api/ping'):
@@ -308,6 +354,106 @@ def upload():
     return render_template("upload.html")
 
 
+@main_bp.route("/upload-new", methods=["POST"])
+@login_required
+def upload_new_template():
+    if not current_user.is_admin:
+        flash("Bạn không có quyền thực hiện chức năng upload file.", "error")
+        return redirect(url_for("main.dashboard"))
+        
+    ca_mau_file = request.files.get("ca_mau_moi")
+    bac_lieu_file = request.files.get("bac_lieu_moi")
+    
+    if not ca_mau_file or not bac_lieu_file or not ca_mau_file.filename or not bac_lieu_file.filename:
+        flash("Vui lòng chọn đủ hai file Excel template mới.", "error")
+        return redirect(url_for("main.dashboard"))
+        
+    if not _allowed(ca_mau_file.filename) or not _allowed(bac_lieu_file.filename):
+        flash("Chỉ chấp nhận file .xlsx hoặc .xls.", "error")
+        return redirect(url_for("main.dashboard"))
+
+    upload_dir: Path = Path(current_app.config["UPLOAD_DIR"])
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    ca_path = upload_dir / f"{uuid4().hex}_{ca_mau_file.filename}"
+    bl_path = upload_dir / f"{uuid4().hex}_{bac_lieu_file.filename}"
+    ca_mau_file.save(ca_path)
+    bac_lieu_file.save(bl_path)
+    
+    try:
+        records, total = load_new_filtered_tickets(ca_path, bl_path)
+        now = _now()
+        current_codes = {record["subscriber_code"] for record in records}
+        waiting_tickets = Ticket.query.filter_by(status=Ticket.STATUS_WAITING).all()
+        status_changed_count = 0
+        
+        for ticket in waiting_tickets:
+            if ticket.subscriber_code not in current_codes:
+                ticket.status = Ticket.STATUS_NOT_LATEST
+                ticket.status_changed_at = now
+                status_changed_count += 1
+
+        existing_tickets = {
+            ticket.subscriber_code: ticket
+            for ticket in Ticket.query.filter(Ticket.subscriber_code.in_(current_codes)).all()
+        }
+        new_count = sum(record["subscriber_code"] not in existing_tickets for record in records)
+        existing_count = len(records) - new_count
+        
+        batch = UploadBatch(
+            uploaded_at=now,
+            uploaded_by_id=current_user.id,
+            ca_mau_filename=ca_mau_file.filename,
+            bac_lieu_filename=bac_lieu_file.filename,
+            total_tickets=total,
+            over_48h_tickets=len(records),
+            new_tickets=new_count,
+            status_changed_tickets=status_changed_count,
+            existing_tickets=existing_count,
+        )
+        db.session.add(batch)
+        db.session.flush()
+        
+        for record in records:
+            ticket = existing_tickets.get(record["subscriber_code"])
+            if ticket is None:
+                record["status"] = Ticket.STATUS_WAITING
+                ticket = Ticket(
+                    batch_id=batch.id,
+                    latest_batch_id=batch.id,
+                    last_seen_at=now,
+                    status_changed_at=now,
+                    **record,
+                )
+                db.session.add(ticket)
+                continue
+
+            ticket.latest_batch_id = batch.id
+            ticket.last_seen_at = now
+            if ticket.status != Ticket.STATUS_WAITING:
+                ticket.status = Ticket.STATUS_WAITING
+                ticket.status_changed_at = now
+            for field, value in record.items():
+                if field != "status":
+                    setattr(ticket, field, value)
+                    
+        db.session.commit()
+        flash(
+            f"Upload Template Mới thành công: thêm mới {new_count} phiếu; chuyển trạng thái khác {status_changed_count} phiếu; "
+            f"đã tồn tại {existing_count} phiếu.",
+            "success",
+        )
+        return redirect(url_for("main.dashboard"))
+        
+    except Exception as error:
+        db.session.rollback()
+        flash(f"Không thể xử lý file template mới: {error}", "error")
+        return redirect(url_for("main.dashboard"))
+    finally:
+        ca_path.unlink(missing_ok=True)
+        bl_path.unlink(missing_ok=True)
+
+
 @main_bp.post("/tickets/<int:ticket_id>/reason")
 @login_required
 def update_reason(ticket_id: int):
@@ -453,7 +599,6 @@ def login_logs():
 
 @main_bp.get("/api/table-data")
 def get_table_data():
-    """API trả về dữ liệu các phiếu tồn để cập nhật ngầm giao diện cho client"""
     batch = UploadBatch.query.order_by(UploadBatch.uploaded_at.desc()).first()
     if not batch:
         return {"tickets": [], "summary_rows": [], "summary_total": {}}

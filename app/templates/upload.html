@@ -1,10 +1,27 @@
 {% extends 'base.html' %}
 {% block title %}Upload dữ liệu | Tồn lắp đặt{% endblock %}
 {% block content %}
-<div class="page-heading"><div><p class="eyebrow">DAILY INGESTION</p><h1>Upload dữ liệu ngày</h1><p>Chọn đúng file Cà Mau và Bạc Liêu. Hệ thống sẽ lọc các phiếu quá 48 giờ và tạo một batch mới.</p></div></div>
-<form class="panel upload-form" method="post" enctype="multipart/form-data">
+<div class="page-heading">
+  <div>
+    <p class="eyebrow">DAILY INGESTION</p>
+    <h1>Upload dữ liệu ngày</h1>
+    <p>Chọn đúng file Cà Mau và Bạc Liêu. Hệ thống sẽ lọc các phiếu quá 48 giờ và tạo một batch mới.</p>
+  </div>
+</div>
+
+<!-- Form upload cũ (Template cũ) -->
+<form class="panel upload-form" method="post" enctype="multipart/form-data" style="margin-bottom: 20px;">
+  <h3 style="margin-bottom: 12px; font-size: 15px; color: var(--ink);">Upload theo Template cũ</h3>
   <label><span>File Cà Mau</span><input type="file" name="ca_mau" accept=".xlsx,.xls" required><small>Mẫu 9.KS01...</small></label>
   <label><span>File Bạc Liêu</span><input type="file" name="bac_lieu" accept=".xlsx,.xls" required><small>Mẫu 63.BLU...</small></label>
-  <button class="button primary" type="submit">Xử lý và lưu batch</button>
+  <button class="button primary" type="submit">Xử lý và lưu batch (Cũ)</button>
+</form>
+
+<!-- Form upload mới (Template mới) -->
+<form class="panel upload-form" method="post" enctype="multipart/form-data" action="{{ url_for('main.upload_new_template') }}">
+  <h3 style="margin-bottom: 12px; font-size: 15px; color: var(--green);">Upload theo Template mới</h3>
+  <label><span>File Cà Mau (Mới)</span><input type="file" name="ca_mau_moi" accept=".xlsx,.xls" required><small>Template mới Cà Mau...</small></label>
+  <label><span>File Bạc Liêu (Mới)</span><input type="file" name="bac_lieu_moi" accept=".xlsx,.xls" required><small>Template mới Bạc Liêu...</small></label>
+  <button class="button secondary" type="submit">Xử lý và lưu batch (Mới)</button>
 </form>
 {% endblock %}
