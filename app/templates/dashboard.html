@@ -26,14 +26,15 @@
     white-space: nowrap;
   }
 
-  /* Cài đặt Wrap Text và áp dụng chiều rộng tương ứng cho cột Đơn vị xử lý phiếu (Cột 2) */
+  /* Cải thiện hiển thị cột Đơn vị xử lý phiếu (Cột 2) */
   .detail-panel table th:nth-child(2),
   .detail-panel table td:nth-child(2) {
-    width: 130px;
-    max-width: 130px;
-    word-break: break-word;
+    width: 180px;
+    min-width: 160px;
     white-space: normal;
     text-align: center;
+    word-break: normal;
+    overflow-wrap: break-word;
   }
 </style>
 
