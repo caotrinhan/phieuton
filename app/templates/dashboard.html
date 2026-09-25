@@ -162,11 +162,10 @@
 <section class="panel upload-result" style="padding: 8px 16px; font-size: 13px; margin-bottom: 16px; background: #fff; border: 1px solid var(--line); border-radius: 6px;">
   <span><strong>Kết quả upload gần nhất:</strong> Phát sinh mới <span style="color: #d35400; font-weight: 600;">{{ batch.new_tickets }}</span> phiếu · Đã xử lý <span style="color: #27ae60; font-weight: 600;">{{ batch.status_changed_tickets }}</span> phiếu · Phiếu cũ <span style="color: #7f8c8d; font-weight: 600;">{{ batch.existing_tickets }}</span> phiếu.</span>
   </section>
-<p>Do thay đổi nguồn xuất dữ liệu từ OneBss (từ báo cáo của tỉnh sang báo cáo OneBss của Tập đoàn, nên tất cả các phiếu tồn hiện hữu ở các dịch vụ hiển thị đầy đủ</p>
 <!-- Bảng Tổng hợp -->
 <section class="panel summary-panel" style="margin-bottom: 20px;">
   <div class="panel-title" style="padding: 12px 16px;">
-    <h2>Tổng hợp theo đơn vị</h2>
+    <h2>Tổng hợp phiếu tồn trên 48h theo đơn vị</h2>
     <span style="font-size: 12px; color: #666;">{{ summary_rows|length }} đơn vị</span>
   </div>
   <div class="table-wrap">
