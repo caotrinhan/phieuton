@@ -54,7 +54,10 @@ def load_new_filtered_tickets(ca_mau_path, bac_lieu_path):
     """
     df_cm = pd.read_excel(ca_mau_path)
     df_bl = pd.read_excel(bac_lieu_path)
-    
+
+    df_cm.columns = df_cm.columns.astype(str).str.strip().str.lower()
+    df_bl.columns = df_bl.columns.astype(str).str.strip().str.lower()
+
     df = pd.concat([df_cm, df_bl], ignore_index=True)
     
     df_filtered = df[
