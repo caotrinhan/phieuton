@@ -362,7 +362,7 @@ def upload():
     return render_template("upload.html")
 
 
-@main_bp.post("/upload-new", methods=["POST"])
+@main_bp.post("/upload-new")
 @login_required
 def upload_new_template():
     if not current_user.is_admin:
