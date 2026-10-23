@@ -362,7 +362,7 @@ def upload():
     return render_template("upload.html")
 
 
-@main_bp.route("/upload-new", methods=["POST"])
+@main_bp.post("/upload-new", methods=["POST"])
 @login_required
 def upload_new_template():
     if not current_user.is_admin:
@@ -391,20 +391,30 @@ def upload_new_template():
     try:
         records, total = load_new_filtered_tickets(ca_path, bl_path)
         now = _now()
-        current_codes = {record["subscriber_code"] for record in records}
+        
+        # Chuẩn hóa tập hợp các mã thuê bao hiện có trong file để đối chiếu
+        current_codes = {str(record["subscriber_code"]).strip().lower() for record in records if record.get("subscriber_code")}
+        
         waiting_tickets = Ticket.query.filter_by(status=Ticket.STATUS_WAITING).all()
         status_changed_count = 0
         
         for ticket in waiting_tickets:
-            if ticket.subscriber_code not in current_codes:
-                ticket.status = Ticket.STATUS_NOT_LATEST
-                ticket.status_changed_at = now
-                status_changed_count += 1
+            if ticket.subscriber_code:
+                t_code = str(ticket.subscriber_code).strip().lower()
+                if t_code not in current_codes:
+                    ticket.status = Ticket.STATUS_NOT_LATEST
+                    ticket.status_changed_at = now
+                    status_changed_count += 1
 
-        existing_tickets = {
-            ticket.subscriber_code: ticket
-            for ticket in Ticket.query.filter(Ticket.subscriber_code.in_(current_codes)).all()
-        }
+        # Lấy toàn bộ ticket từ DB và chuẩn hóa key dạng chữ thường, bỏ khoảng trắng
+        db_tickets = Ticket.query.all()
+        existing_tickets = {}
+        for t in db_tickets:
+            if t.subscriber_code:
+                key = str(t.subscriber_code).strip().lower()
+                # Ưu tiên giữ bản ghi có id lớn nhất nếu lỡ có dữ liệu trùng lặp cũ
+                if key not in existing_tickets or t.id > existing_tickets[key].id:
+                    existing_tickets[key] = t
         
         new_count = 0
         existing_count = 0
@@ -424,7 +434,13 @@ def upload_new_template():
         db.session.flush()
         
         for record in records:
-            ticket = existing_tickets.get(record["subscriber_code"])
+            raw_code = record.get("subscriber_code")
+            if not raw_code:
+                continue
+            
+            sub_code_key = str(raw_code).strip().lower()
+            ticket = existing_tickets.get(sub_code_key)
+            
             if ticket is None:
                 # Nếu chưa có trong DB -> Tạo mới và gán status là DANG_CHO_XAC_MINH (STATUS_WAITING)
                 new_count += 1
@@ -437,13 +453,15 @@ def upload_new_template():
                     **record,
                 )
                 db.session.add(ticket)
+                # Đưa ngay vào từ điển để tránh trường hợp file excel chứa mã trùng lặp trong cùng một lần upload
+                existing_tickets[sub_code_key] = ticket
             else:
-                # Nếu đã tồn tại trong DB
+                # Nếu đã tồn tại trong DB -> Thực hiện cập nhật (UPDATE) thay vì chèn mới (INSERT)
                 existing_count += 1
                 ticket.latest_batch_id = batch.id
                 ticket.last_seen_at = now
                 
-                # Nếu status đang là 'ĐANG CHỜ XÁC MINH' thì giữ nguyên, không đổi trạng thái
+                # Nếu status đang không phải 'ĐANG CHỜ XAC MINH' thì chuyển về chờ xác minh
                 if ticket.status != Ticket.STATUS_WAITING:
                     ticket.status = Ticket.STATUS_WAITING
                     ticket.status_changed_at = now
@@ -463,15 +481,18 @@ def upload_new_template():
             "success",
         )
         return redirect(url_for("main.dashboard"))
-        
+
     except Exception as error:
         db.session.rollback()
+        # In lỗi chi tiết ra terminal/console của Python
+        import traceback
+        traceback.print_exc()
+
         flash(f"Không thể xử lý file template mới: {error}", "error")
         return redirect(url_for("main.dashboard"))
     finally:
         ca_path.unlink(missing_ok=True)
         bl_path.unlink(missing_ok=True)
-
 
 @main_bp.post("/tickets/<int:ticket_id>/reason")
 @login_required
