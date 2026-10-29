@@ -335,7 +335,9 @@
           <th class="sortable-header" id="th-thoigian" title="Nhấn để sắp xếp theo Thời gian tồn">
             THOIGIAN_TON (h) <span class="sort-icon" id="sort-icon-thoigian">↕</span>
           </th>
-          <th>YC xác minh lại </th>
+          <th class="sortable-header" id="th-recheck" title="Nhấn để sắp xếp theo yêu cầu xác minh lại">
+            YC xác minh lại <span class="sort-icon" id="sort-icon-recheck">↕</span>
+          </th>
           <th>Lý do tồn (TTVT báo cáo)</th>
           <th>Hình ảnh</th>
           <th>Diachi Ld</th>
@@ -353,7 +355,8 @@
         
         <tr class="{% if has_reason %}row-verified{% elif is_over_100 %}row-warning-heavy{% else %}row-warning-light{% endif %}{% if ticket.requires_reason_recheck %} row-recheck{% endif %}"
             data-unit="{{ ticket.unit }}"
-            data-hours="{{ ticket.age_hours or 0 }}">
+            data-hours="{{ ticket.age_hours or 0 }}"
+            data-recheck="{{ 'true' if ticket.requires_reason_recheck else 'false' }}">
           <td>{{ loop.index }}</td>
           <td>{{ ticket.unit }}</td>
           <td>{{ ticket.equipment_type }}</td>
@@ -365,7 +368,7 @@
             {% endif %}
           </td>
           <td><button class="ticket-link ticket-name" type="button" data-modal="reason-modal-{{ ticket.id }}" data-ticket-unit="{{ ticket.unit }}">{{ ticket.subscriber_name }}</button></td>
-          <td>{{ ticket.request_at.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+          <td>{{ ticket.request_at.strftime('%d/%m/%Y') }}<br>{{ ticket.request_at.strftime('%H:%M:%S') }}</td>
           <td class="hours">
             {{ ticket.age_hours }}
             {% if not has_reason and is_over_100 %}
@@ -528,7 +531,7 @@
   var allowedUnits = {{ allowed_units | tojson }};
 
   // Cấu hình biến quản lý Sort và Filter
-  var currentSortColumn = null; // 'donvi' hoặc 'thoigian'
+  var currentSortColumn = null; // 'donvi', 'thoigian' hoặc 'recheck'
   var currentSortOrder = 'asc'; // 'asc' hoặc 'desc'
 
   document.addEventListener('click', function(event) {
@@ -767,7 +770,7 @@
     if (countElem) countElem.textContent = visibleCount + ' dòng';
   }
 
-  // Thực hiện sắp xếp dữ liệu theo 2 cột: DONVI_XULY_PHIEU hoặc THOIGIAN_TON
+  // Sắp xếp theo đơn vị, thời gian tồn hoặc yêu cầu xác minh lại
   function sortTable(column) {
     if (currentSortColumn === column) {
       currentSortOrder = (currentSortOrder === 'asc') ? 'desc' : 'asc';
@@ -779,10 +782,13 @@
     // Cập nhật icon biểu tượng
     var donviIcon = document.getElementById('sort-icon-donvi');
     var thoigianIcon = document.getElementById('sort-icon-thoigian');
+    var recheckIcon = document.getElementById('sort-icon-recheck');
     if (donviIcon) donviIcon.textContent = '↕';
     if (thoigianIcon) thoigianIcon.textContent = '↕';
+    if (recheckIcon) recheckIcon.textContent = '↕';
 
-    var activeIcon = (column === 'donvi') ? donviIcon : thoigianIcon;
+    var activeIcon = column === 'donvi' ? donviIcon :
+      (column === 'thoigian' ? thoigianIcon : recheckIcon);
     if (activeIcon) {
       activeIcon.textContent = (currentSortOrder === 'asc') ? '▲' : '▼';
     }
@@ -805,6 +811,10 @@
         valA = parseFloat(a.getAttribute('data-hours') || '0');
         valB = parseFloat(b.getAttribute('data-hours') || '0');
         return currentSortOrder === 'asc' ? valA - valB : valB - valA;
+      } else if (column === 'recheck') {
+        valA = a.getAttribute('data-recheck') === 'true' ? 1 : 0;
+        valB = b.getAttribute('data-recheck') === 'true' ? 1 : 0;
+        return currentSortOrder === 'asc' ? valA - valB : valB - valA;
       }
       return 0;
     });
@@ -826,6 +836,11 @@
   var thThoiGian = document.getElementById('th-thoigian');
   if (thThoiGian) {
     thThoiGian.addEventListener('click', function() { sortTable('thoigian'); });
+  }
+
+  var thRecheck = document.getElementById('th-recheck');
+  if (thRecheck) {
+    thRecheck.addEventListener('click', function() { sortTable('recheck'); });
   }
 
   var filterSelect = document.getElementById('filter-donvi');
@@ -877,6 +892,10 @@
           }
 
           var hoursDisplay = ticket.age_hours;
+          var requestAtParts = (ticket.request_at || '').split(' ');
+          var requestAtDisplay = requestAtParts.length > 1 ?
+            requestAtParts[0] + '<br>' + requestAtParts.slice(1).join(' ') :
+            (requestAtParts[0] || '');
           if (!hasReason && isOver100) {
             hoursDisplay += '<span style="display: block; font-size: 10px; background: #e11d48; color: #fff; padding: 1px 4px; border-radius: 3px; font-weight: bold; margin-top: 2px;">>=100H CẦN XÁC MINH</span>';
           }
@@ -886,7 +905,7 @@
             reasonTextDisp += '<small class="reason-meta">(' + ticket.reason_updated_by + ' - ' + ticket.reason_updated_at + ')</small>';
           }
 
-          newHtml += '<tr class="' + rowClass + '" data-unit="' + ticket.unit + '" data-hours="' + ticket.age_hours + '">' +
+          newHtml += '<tr class="' + rowClass + '" data-unit="' + ticket.unit + '" data-hours="' + ticket.age_hours + '" data-recheck="' + ticket.requires_reason_recheck + '">' +
             '<td>' + (index + 1) + '</td>' +
             '<td>' + ticket.unit + '</td>' +
             '<td>' + ticket.equipment_type + '</td>' +
@@ -894,7 +913,7 @@
               '<button class="ticket-link" type="button" data-check-ticket="' + ticket.id + '" data-ticket-code="' + ticket.subscriber_code + '" data-ticket-name="' + (ticket.subscriber_name || '') + '" data-check-current="' + ticket.requires_reason_recheck + '">' + ticket.subscriber_code + '</button>' :
               '<button class="ticket-link" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + ticket.unit + '">' + ticket.subscriber_code + '</button>') + '</td>' +
             '<td><button class="ticket-link ticket-name" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + ticket.unit + '">' + ticket.subscriber_name + '</button></td>' +
-            '<td>' + ticket.request_at + '</td>' +
+            '<td>' + requestAtDisplay + '</td>' +
             '<td class="hours">' + hoursDisplay + '</td>' +
             '<td>' + (ticket.requires_reason_recheck ? 'X' : '') + '</td>' +
             '<td class="reason-preview" style="' + reasonStyle + '">' + reasonTextDisp + '</td>' +

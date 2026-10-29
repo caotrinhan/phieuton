@@ -180,7 +180,7 @@ def dashboard():
         item["total"] += 1
         item["requires_reason_recheck"] += ticket.requires_reason_recheck
         equipment = (ticket.equipment_type or "").lower()
-        if "megawan" in equipment or "metronet" in equipment:
+        if "megawan" in equipment or "metronet" in equipment or "internet tr" in equipment:
             item["MegaWAN/MetroNET"] += 1
         elif equipment == "fiber":
             item["fiber"] += 1
