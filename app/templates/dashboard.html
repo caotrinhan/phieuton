@@ -42,6 +42,15 @@
     text-align: left;
   }
 
+  .detail-panel table th:nth-child(8),
+  .detail-panel table td:nth-child(8) {
+    width: 85px;
+    min-width: 85px;
+    max-width: 85px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
   .detail-panel table th:nth-child(6),
   .detail-panel table td:nth-child(6) {
     width: 130px;
@@ -326,7 +335,7 @@
           <th class="sortable-header" id="th-thoigian" title="Nhấn để sắp xếp theo Thời gian tồn">
             THOIGIAN_TON (h) <span class="sort-icon" id="sort-icon-thoigian">↕</span>
           </th>
-          <th>P.KTĐT yêu cầu</th>
+          <th>YC xác minh lại </th>
           <th>Lý do tồn (TTVT báo cáo)</th>
           <th>Hình ảnh</th>
           <th>Diachi Ld</th>
@@ -363,7 +372,7 @@
               <span style="display: block; font-size: 10px; background: #e11d48; color: #fff; padding: 1px 4px; border-radius: 3px; font-weight: bold; margin-top: 2px;">>=100H CẦN XÁC MINH</span>
             {% endif %}
           </td>
-          <td>{{ 'Lý do tồn chưa đúng, đề nghị xác minh lại lý do tồn' if ticket.requires_reason_recheck else '✓' }}</td>
+          <td>{{ 'X' if ticket.requires_reason_recheck else '' }}</td>
           <td class="reason-preview" style="{% if not has_reason %}{% if is_over_100 %}color: #9f1239; font-weight: 800;{% else %}color: #dc2626; font-weight: 600;{% endif %}{% else %}color: #16a34a;{% endif %}">
             {{ ticket.reason or 'Chưa xác minh' }}
           </td>
@@ -881,7 +890,7 @@
             '<td><button class="ticket-link ticket-name" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + ticket.unit + '">' + ticket.subscriber_name + '</button></td>' +
             '<td>' + ticket.request_at + '</td>' +
             '<td class="hours">' + hoursDisplay + '</td>' +
-            '<td>' + (ticket.requires_reason_recheck ? 'Lý do tồn chưa đúng, đề nghị xác minh lại lý do tồn' : '') + '</td>' +
+            '<td>' + (ticket.requires_reason_recheck ? 'X' : '') + '</td>' +
             '<td class="reason-preview" style="' + reasonStyle + '">' + reasonTextDisp + '</td>' +
             '<td class="thumbnail-cell">' + imagesHtml + '</td>' +
             '<td>' + (ticket.address || '') + '</td>' +
