@@ -223,6 +223,7 @@
         <tr>
           <th>STT</th>
           <th>Đơn vị</th>
+          <th>SL_MegaWAN/MetroNET</th>
           <th>SL_Fiber</th>
           <th>SL_MyTV</th>
           <th>SL_Mesh</th>
@@ -230,6 +231,7 @@
           <th>Tổng</th>
           <th>Phiếu TTVT đã xác minh lý do</th>
           <th>Tỷ lệ đã xác minh(%)</th>
+          <th>Yêu cầu check lại</th>
         </tr>
       </thead>
       <tbody>
@@ -237,6 +239,7 @@
         <tr>
           <td>{{ row.stt }}</td>
           <td>{{ row.unit }}</td>
+          <td>{{ row["MegaWAN/MetroNET"] }}</td>
           <td>{{ row.fiber }}</td>
           <td>{{ row.mytv }}</td>
           <td>{{ row.mesh }}</td>
@@ -244,13 +247,15 @@
           <td style="font-weight: bold; color: #dc2626; background-color: #fef2f2;">{{ row.total }}</td>
           <td>{{ row.reported }}</td>
           <td>{{ (row.reported * 100 / row.total)|round(2) }}</td>
+          <td>{{ row.requires_reason_recheck }}</td>
         </tr>
         {% else %}
-        <tr><td colspan="9">Chưa có dữ liệu tổng hợp.</td></tr>
+        <tr><td colspan="11">Chưa có dữ liệu tổng hợp.</td></tr>
         {% endfor %}
         <tr class="summary-total" style="font-weight: bold; background: #f8fafc;">
           <td></td>
           <td><strong>Tổng</strong></td>
+          <td>{{ summary_total["MegaWAN/MetroNET"] }}</td>
           <td>{{ summary_total.fiber }}</td>
           <td>{{ summary_total.mytv }}</td>
           <td>{{ summary_total.mesh }}</td>
@@ -258,6 +263,7 @@
           <td style="font-weight: bold; color: #dc2626; background-color: #fef2f2;">{{ summary_total.total }}</td>
           <td>{{ summary_total.reported }}</td>
           <td>{{ (summary_total.reported * 100 / summary_total.total)|round(2) if summary_total.total else 0 }}</td>
+          <td>{{ summary_total.requires_reason_recheck }}</td>
         </tr>
       </tbody>
     </table>
@@ -269,7 +275,14 @@
   <div class="panel-title" style="padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; border-bottom: 1px solid rgba(226, 232, 240, 0.8); gap: 10px;">
     <div>
       <h2 style="margin-bottom: 2px; color: #005aa0; font-weight: 700;">Chi tiết phiếu tồn</h2>
-      <p class="panel-help" style="margin: 0; font-size: 12px; color: #64748b;">Nhấn vào mã/tên thuê bao để cập nhật lý do tồn/hình ảnh; Nhấn vào ảnh để xem phóng to ảnh.</p>
+      <p class="panel-help" style="margin: 0; font-size: 12px; color: #64748b;">
+        {% if current_user.is_authenticated and current_user.is_admin %}
+        Nhấn mã thuê bao để cập nhật yêu cầu check lại; nhấn tên thuê bao để cập nhật lý do tồn/hình ảnh.
+        {% else %}
+        Nhấn vào mã/tên thuê bao để cập nhật lý do tồn/hình ảnh.
+        {% endif %}
+        Nhấn vào ảnh để xem phóng to ảnh.
+      </p>
     </div>
 
     <!-- Dropdown lọc theo DONVI_XULY_PHIEU -->
@@ -305,6 +318,7 @@
           <th>TEN_LOAIHD</th>
           <th>TRANGTHAI_HD</th>
           <th>Cập nhật</th>
+          <th>Yêu cầu check lại</th>
         </tr>
       </thead>
       <tbody>
@@ -318,7 +332,13 @@
           <td>{{ loop.index }}</td>
           <td>{{ ticket.unit }}</td>
           <td>{{ ticket.equipment_type }}</td>
-          <td><button class="ticket-link" type="button" data-modal="reason-modal-{{ ticket.id }}" data-ticket-unit="{{ ticket.unit }}">{{ ticket.subscriber_code }}</button></td>
+          <td>
+            {% if current_user.is_authenticated and current_user.is_admin %}
+            <button class="ticket-link" type="button" data-check-ticket="{{ ticket.id }}" data-ticket-code="{{ ticket.subscriber_code }}" data-ticket-name="{{ ticket.subscriber_name or '' }}" data-check-current="{{ 'true' if ticket.requires_reason_recheck else 'false' }}">{{ ticket.subscriber_code }}</button>
+            {% else %}
+            <button class="ticket-link" type="button" data-modal="reason-modal-{{ ticket.id }}" data-ticket-unit="{{ ticket.unit }}">{{ ticket.subscriber_code }}</button>
+            {% endif %}
+          </td>
           <td><button class="ticket-link ticket-name" type="button" data-modal="reason-modal-{{ ticket.id }}" data-ticket-unit="{{ ticket.unit }}">{{ ticket.subscriber_name }}</button></td>
           <td>{{ ticket.request_at.strftime('%d/%m/%Y %H:%M:%S') }}</td>
           <td class="hours">
@@ -353,14 +373,36 @@
               <span class="muted">Chưa cập nhật</span>
             {% endif %}
           </td>
+          <td>{{ 'Có' if ticket.requires_reason_recheck else 'Không' }}</td>
         </tr>
         {% else %}
-        <tr><td colspan="14">Chưa có phiếu tồn trên 48 giờ.</td></tr>
+        <tr><td colspan="15">Chưa có phiếu tồn trên 48 giờ.</td></tr>
         {% endfor %}
+
       </tbody>
     </table>
   </div>
 </section>
+
+{% if current_user.is_authenticated and current_user.is_admin %}
+<dialog class="reason-modal" id="check-again-modal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div>
+        <p class="eyebrow">YÊU CẦU CHECK LẠI LÝ DO TỒN</p>
+        <h2 id="check-again-code"></h2>
+        <p id="check-again-name"></p>
+        <p id="check-again-current" style="font-size: 13px; color: #475569;"></p>
+      </div>
+      <button class="modal-close" type="button" data-close-modal>Đóng</button>
+    </div>
+    <form class="modal-form" method="post" id="check-again-form" action="{{ url_for('main.update_reason_recheck', ticket_id=0) }}" data-action-template="{{ url_for('main.update_reason_recheck', ticket_id=0) }}">
+      <button class="save-button" type="submit" name="requires_reason_recheck" value="true">Yêu cầu check lại</button>
+      <button class="button secondary" type="submit" name="requires_reason_recheck" value="false">Không yêu cầu check lại</button>
+    </form>
+  </div>
+</dialog>
+{% endif %}
 
 <!-- Modals & Viewer -->
 {% for ticket in tickets %}
@@ -493,6 +535,23 @@
   }
 
   function bindDynamicEvents() {
+    document.querySelectorAll('.detail-table [data-check-ticket]').forEach(function(button){
+      if (button.hasAttribute('data-bound')) return;
+      button.setAttribute('data-bound', 'true');
+      button.addEventListener('click', function(){
+        var modal = document.getElementById('check-again-modal');
+        var form = document.getElementById('check-again-form');
+        if (!modal || !form) return;
+        form.dataset.actionTemplate = form.dataset.actionTemplate || form.action;
+        form.action = form.dataset.actionTemplate.replace('/0/check-again', '/' + button.dataset.checkTicket + '/check-again');
+        document.getElementById('check-again-code').textContent = button.dataset.ticketCode;
+        document.getElementById('check-again-name').textContent = button.dataset.ticketName;
+        document.getElementById('check-again-current').textContent =
+          'Trạng thái hiện tại: ' + (button.dataset.checkCurrent === 'true' ? 'Có yêu cầu check lại' : 'Không yêu cầu check lại');
+        modal.showModal();
+      });
+    });
+
     document.querySelectorAll('.detail-table [data-modal]').forEach(function(button){
       if (button.hasAttribute('data-bound')) return;
       button.setAttribute('data-bound', 'true');
@@ -760,7 +819,7 @@
       
       var newHtml = '';
       if (data.tickets.length === 0) {
-        newHtml = '<tr><td colspan="14">Chưa có phiếu tồn trên 48 giờ.</td></tr>';
+        newHtml = '<tr><td colspan="15">Chưa có phiếu tồn trên 48 giờ.</td></tr>';
       } else {
         data.tickets.forEach(function(ticket, index) {
           var imagesHtml = '';
@@ -804,7 +863,9 @@
             '<td>' + (index + 1) + '</td>' +
             '<td>' + ticket.unit + '</td>' +
             '<td>' + ticket.equipment_type + '</td>' +
-            '<td><button class="ticket-link" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + ticket.unit + '">' + ticket.subscriber_code + '</button></td>' +
+            '<td>' + (isAdmin ?
+              '<button class="ticket-link" type="button" data-check-ticket="' + ticket.id + '" data-ticket-code="' + ticket.subscriber_code + '" data-ticket-name="' + (ticket.subscriber_name || '') + '" data-check-current="' + ticket.requires_reason_recheck + '">' + ticket.subscriber_code + '</button>' :
+              '<button class="ticket-link" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + ticket.unit + '">' + ticket.subscriber_code + '</button>') + '</td>' +
             '<td><button class="ticket-link ticket-name" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + ticket.unit + '">' + ticket.subscriber_name + '</button></td>' +
             '<td>' + ticket.request_at + '</td>' +
             '<td class="hours">' + hoursDisplay + '</td>' +
@@ -815,6 +876,7 @@
             '<td>' + ticket.contract_type + '</td>' +
             '<td><span class="status waiting">' + ticket.status + '</span></td>' +
             '<td class="updated">' + updateInfo + '</td>' +
+            '<td>' + (ticket.requires_reason_recheck ? 'Có' : 'Không') + '</td>' +
           '</tr>';
         });
       }

@@ -92,6 +92,7 @@ class Ticket(db.Model):
     request_at = db.Column(db.DateTime, nullable=False)
     age_hours = db.Column(db.Numeric(10, 1), nullable=False, index=True)
     reason = db.Column(db.Text)
+    requires_reason_recheck = db.Column(db.Boolean, nullable=False, default=False)
     reason_updated_by_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     reason_updated_at = db.Column(db.DateTime)
     last_seen_at = db.Column(db.DateTime, nullable=False, default=local_now, index=True)

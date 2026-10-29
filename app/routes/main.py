@@ -6,6 +6,7 @@ from uuid import uuid4
 import pandas as pd
 from flask import Blueprint, current_app, flash, redirect, render_template, request, send_file, send_from_directory, url_for
 from flask_login import current_user, login_required
+from sqlalchemy.exc import SQLAlchemyError
 from ..extensions import db
 from ..models import ReasonAudit, Ticket, TicketImage, UploadBatch, User, LoginLog, TrungTamMapping
 from ..services.import_service import load_filtered_tickets
@@ -175,8 +176,9 @@ def dashboard():
     
     units = {}
     for ticket in tickets:
-        item = units.setdefault(ticket.unit, {"total": 0,"MegaWAN/MetroNET":0, "fiber": 0, "mytv": 0, "mesh": 0, "camera": 0, "reported": 0})
+        item = units.setdefault(ticket.unit, {"total": 0, "MegaWAN/MetroNET": 0, "fiber": 0, "mytv": 0, "mesh": 0, "camera": 0, "reported": 0, "requires_reason_recheck": 0})
         item["total"] += 1
+        item["requires_reason_recheck"] += ticket.requires_reason_recheck
         equipment = (ticket.equipment_type or "").lower()
         if "megawan" in equipment or "metronet" in equipment:
             item["MegaWAN/MetroNET"] += 1
@@ -195,11 +197,13 @@ def dashboard():
     summary_rows = [{"stt": index, "unit": unit, **item} for index, (unit, item) in enumerate(sorted_units, 1)]
     summary_total = {
         "total": sum(row["total"] for row in summary_rows),
+        "MegaWAN/MetroNET": sum(row["MegaWAN/MetroNET"] for row in summary_rows),
         "fiber": sum(row["fiber"] for row in summary_rows),
         "mytv": sum(row["mytv"] for row in summary_rows),
         "mesh": sum(row["mesh"] for row in summary_rows),
         "camera": sum(row["camera"] for row in summary_rows),
         "reported": sum(row["reported"] for row in summary_rows),
+        "requires_reason_recheck": sum(row["requires_reason_recheck"] for row in summary_rows),
     }
     
     allowed_units = _get_allowed_units() if current_user.is_authenticated else []
@@ -549,6 +553,32 @@ def update_reason(ticket_id: int):
     return redirect(request.referrer or url_for("main.dashboard"))
 
 
+@main_bp.post("/tickets/<int:ticket_id>/check-again")
+@login_required
+def update_reason_recheck(ticket_id: int):
+    if not current_user.is_admin:
+        flash("Bạn không có quyền cập nhật yêu cầu check lại lý do tồn.", "error")
+        return redirect(url_for("main.dashboard"))
+
+    value = request.form.get("requires_reason_recheck")
+    if value not in {"true", "false"}:
+        flash("Giá trị yêu cầu check lại không hợp lệ.", "error")
+        return redirect(url_for("main.dashboard"))
+
+    ticket = db.get_or_404(Ticket, ticket_id)
+    ticket.requires_reason_recheck = value == "true"
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        current_app.logger.exception("Không thể cập nhật yêu cầu check lại cho ticket %s.", ticket_id)
+        flash("Không thể lưu trạng thái yêu cầu check lại. Vui lòng thử lại.", "error")
+    else:
+        status = "có" if ticket.requires_reason_recheck else "không"
+        flash(f"Đã cập nhật thuê bao {ticket.subscriber_code}: {status} yêu cầu check lại lý do tồn.", "success")
+    return redirect(url_for("main.dashboard"))
+
+
 @main_bp.get("/ticket-images/<int:image_id>")
 def ticket_image(image_id: int):
     image = db.get_or_404(TicketImage, image_id)
@@ -580,6 +610,7 @@ def export_xlsx():
             "THOIGIAN_TON (h)": float(ticket.age_hours),
             "Diachi Ld": ticket.address or "",
             "So Dt": ticket.phone or "",
+            "Yêu cầu check lại lý do tồn": ticket.requires_reason_recheck,
             "Trạng thái": ticket.status,
             "TTVT báo lý do tồn": ticket.reason or "",
             "Người cập nhật": ticket.reason_updated_by.full_name if ticket.reason_updated_by else "",
@@ -589,10 +620,28 @@ def export_xlsx():
     ])
     summary = detail.groupby("Đơn vị", dropna=False).agg(
         total=("Mã thuê bao", "count"),
+        requires_reason_recheck=("Yêu cầu check lại lý do tồn", "sum"),
+        megawan_metronet=(
+            "Loại TB",
+            lambda values: values.astype(str).str.lower().str.contains("megawan|metronet", regex=True).sum(),
+        ),
         reported=("TTVT báo lý do tồn", lambda values: (values.astype(str).str.strip() != "").sum()),
     ).reset_index()
-    summary = summary.rename(columns={"total": "Tổng", "reported": "Đã xác minh"})
+    summary = summary.rename(columns={
+        "total": "Tổng",
+        "requires_reason_recheck": "Yêu cầu check lại lý do tồn",
+        "megawan_metronet": "MegaWAN/MetroNET",
+        "reported": "Đã xác minh",
+    })
     summary["Tỷ lệ xác minh (%)"] = (summary["Đã xác minh"] * 100 / summary["Tổng"]).round(2)
+    summary = summary[[
+        "Đơn vị",
+        "Tổng",
+        "MegaWAN/MetroNET",
+        "Đã xác minh",
+        "Tỷ lệ xác minh (%)",
+        "Yêu cầu check lại lý do tồn",
+    ]]
     output = BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         summary.to_excel(writer, sheet_name="Tổng hợp", index=False)
@@ -659,6 +708,7 @@ def get_table_data():
             "subscriber_name": ticket.subscriber_name,
             "request_at": ticket.request_at.strftime('%d/%m/%Y %H:%M:%S') if ticket.request_at else "",
             "age_hours": ticket.age_hours,
+            "requires_reason_recheck": ticket.requires_reason_recheck,
             "reason": ticket.reason or "",
             "address": ticket.address or "",
             "phone": ticket.phone or "",

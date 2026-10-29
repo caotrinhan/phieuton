@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS tickets (
 	request_at DATETIME NOT NULL,
 	age_hours DECIMAL(10,1) NOT NULL,
 	reason TEXT,
+	requires_reason_recheck BOOLEAN NOT NULL DEFAULT FALSE,
 	reason_updated_by_id INT,
 	reason_updated_at DATETIME,
 	last_seen_at DATETIME NOT NULL,
