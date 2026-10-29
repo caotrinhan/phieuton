@@ -175,10 +175,12 @@ def dashboard():
     
     units = {}
     for ticket in tickets:
-        item = units.setdefault(ticket.unit, {"total": 0, "fiber": 0, "mytv": 0, "mesh": 0, "camera": 0, "reported": 0})
+        item = units.setdefault(ticket.unit, {"total": 0,"MegaWAN/MetroNET":0, "fiber": 0, "mytv": 0, "mesh": 0, "camera": 0, "reported": 0})
         item["total"] += 1
         equipment = (ticket.equipment_type or "").lower()
-        if equipment == "fiber":
+        if "megawan" in equipment or "metronet" in equipment:
+            item["MegaWAN/MetroNET"] += 1
+        elif equipment == "fiber":
             item["fiber"] += 1
         elif equipment == "mytv":
             item["mytv"] += 1
