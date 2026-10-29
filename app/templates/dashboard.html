@@ -110,6 +110,11 @@
     transform: translateY(-2px);
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.05) !important;
   }
+  .center_danger {
+    text-align: center;
+    color:blue;
+    font-weight: bold;
+  }
 </style>
 
 <!-- Thanh trạng thái người đang xem -->
@@ -234,7 +239,6 @@
 <section class="panel upload-result" style="padding: 10px 18px; font-size: 13px; margin-bottom: 16px;">
   <span><strong>Kết quả upload gần nhất:</strong> Phát sinh mới <span style="color: #d97706; font-weight: 700;">{{ batch.new_tickets }}</span> phiếu · Đã xử lý <span style="color: #16a34a; font-weight: 700;">{{ batch.status_changed_tickets }}</span> phiếu · Phiếu cũ <span style="color: #64748b; font-weight: 700;">{{ batch.existing_tickets }}</span> phiếu.</span>
 </section>
-<div><h6>YC xác minh lại lý do tồn: quá ngày hẹn KH, quá ngày KH hẹn, phiếu báo đã thi công nhưng quá lâu chưa đóng phiếu...</h6></div>
 <!-- Bảng Tổng hợp -->
 <section class="panel summary-panel" style="margin-bottom: 20px;">
   <div class="panel-title" style="padding: 14px 18px; border-bottom: 1px solid rgba(226, 232, 240, 0.8);">
@@ -293,6 +297,7 @@
     </table>
   </div>
 </section>
+<div class="center_danger"><h4>YC xác minh lại lý do tồn: quá ngày hẹn KH, quá ngày KH hẹn, phiếu báo đã thi công nhưng quá lâu chưa đóng phiếu...</h4></div>
 
 <!-- Bảng Chi tiết -->
 <section class="panel detail-panel">
