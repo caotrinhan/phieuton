@@ -26,9 +26,19 @@
     vertical-align: middle;
   }
 
+  .summary-panel table th:nth-child(3) {
+    background-color: #0369a1;
+    color: #fff;
+  }
+  .summary-panel table td:nth-child(3) {
+    background-color: #e0f2fe !important;
+    color: #075985;
+    font-weight: 700;
+  }
+
   .detail-panel table td:nth-child(5), /* TEN_TB */
-  .detail-panel table td:nth-child(8), /* Lý do tồn */
-  .detail-panel table td:nth-child(10) /* Diachi Ld */ {
+  .detail-panel table td:nth-child(9), /* Lý do tồn */
+  .detail-panel table td:nth-child(11) /* Diachi Ld */ {
     text-align: left;
   }
 
@@ -76,6 +86,11 @@
   tr.row-warning-heavy {
     background-color: #fecdd3 !important; /* Đỏ đậm - Chưa xác minh >= 100h */
     border-left: 5px solid #e11d48 !important;
+  }
+  .detail-panel tr.row-recheck td {
+    background-color: #fef08a !important;
+    color: #713f12;
+    font-weight: 700;
   }
 
   /* Hiệu ứng hover thẻ thống kê */
@@ -311,14 +326,15 @@
           <th class="sortable-header" id="th-thoigian" title="Nhấn để sắp xếp theo Thời gian tồn">
             THOIGIAN_TON (h) <span class="sort-icon" id="sort-icon-thoigian">↕</span>
           </th>
-          <th>Lý do tồn</th>
+          <th>P.KTĐT yêu cầu</th>
+          <th>Lý do tồn (TTVT báo cáo)</th>
           <th>Hình ảnh</th>
           <th>Diachi Ld</th>
           <th>So Dt</th>
           <th>TEN_LOAIHD</th>
-          <th>TRANGTHAI_HD</th>
+
           <th>Cập nhật</th>
-          <th>Yêu cầu check lại</th>
+          <th>TRANGTHAI_HD</th>
         </tr>
       </thead>
       <tbody>
@@ -326,7 +342,7 @@
         {% set has_reason = ticket.reason and ticket.reason.strip() %}
         {% set is_over_100 = ticket.age_hours and ticket.age_hours|float >= 100 %}
         
-        <tr class="{% if has_reason %}row-verified{% elif is_over_100 %}row-warning-heavy{% else %}row-warning-light{% endif %}"
+        <tr class="{% if has_reason %}row-verified{% elif is_over_100 %}row-warning-heavy{% else %}row-warning-light{% endif %}{% if ticket.requires_reason_recheck %} row-recheck{% endif %}"
             data-unit="{{ ticket.unit }}"
             data-hours="{{ ticket.age_hours or 0 }}">
           <td>{{ loop.index }}</td>
@@ -347,6 +363,7 @@
               <span style="display: block; font-size: 10px; background: #e11d48; color: #fff; padding: 1px 4px; border-radius: 3px; font-weight: bold; margin-top: 2px;">>=100H CẦN XÁC MINH</span>
             {% endif %}
           </td>
+          <td>{{ 'Lý do tồn chưa đúng, đề nghị xác minh lại lý do tồn' if ticket.requires_reason_recheck else '' }}</td>
           <td class="reason-preview" style="{% if not has_reason %}{% if is_over_100 %}color: #9f1239; font-weight: 800;{% else %}color: #dc2626; font-weight: 600;{% endif %}{% else %}color: #16a34a;{% endif %}">
             {{ ticket.reason or 'Chưa xác minh' }}
             {% if ticket.reason_updated_by and ticket.reason_updated_at %}
@@ -365,7 +382,7 @@
           <td>{{ ticket.address or '' }}</td>
           <td>{{ ticket.phone or '' }}</td>
           <td>{{ ticket.contract_type }}</td>
-          <td><span class="status waiting">{{ ticket.status }}</span></td>
+          <td>{{ 'Có' if ticket.requires_reason_recheck else 'Không' }}</td>
           <td class="updated">
             {% if ticket.reason_updated_by %}
               {{ ticket.reason_updated_by.email }}<br>{{ ticket.reason_updated_at.strftime('%d/%m/%Y %H:%M:%S') }}
@@ -373,7 +390,7 @@
               <span class="muted">Chưa cập nhật</span>
             {% endif %}
           </td>
-          <td>{{ 'Có' if ticket.requires_reason_recheck else 'Không' }}</td>
+          <td><span class="status waiting">{{ ticket.status }}</span></td>
         </tr>
         {% else %}
         <tr><td colspan="15">Chưa có phiếu tồn trên 48 giờ.</td></tr>
@@ -843,6 +860,7 @@
           var isOver100 = hoursNum >= 100;
 
           var rowClass = hasReason ? 'row-verified' : (isOver100 ? 'row-warning-heavy' : 'row-warning-light');
+          if (ticket.requires_reason_recheck) rowClass += ' row-recheck';
           
           var reasonStyle = 'color: #16a34a;';
           if (!hasReason) {
@@ -869,14 +887,15 @@
             '<td><button class="ticket-link ticket-name" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + ticket.unit + '">' + ticket.subscriber_name + '</button></td>' +
             '<td>' + ticket.request_at + '</td>' +
             '<td class="hours">' + hoursDisplay + '</td>' +
+            '<td>' + (ticket.requires_reason_recheck ? 'Lý do tồn chưa đúng, đề nghị xác minh lại lý do tồn' : '') + '</td>' +
             '<td class="reason-preview" style="' + reasonStyle + '">' + reasonTextDisp + '</td>' +
             '<td class="thumbnail-cell">' + imagesHtml + '</td>' +
             '<td>' + (ticket.address || '') + '</td>' +
             '<td>' + (ticket.phone || '') + '</td>' +
             '<td>' + ticket.contract_type + '</td>' +
-            '<td><span class="status waiting">' + ticket.status + '</span></td>' +
-            '<td class="updated">' + updateInfo + '</td>' +
             '<td>' + (ticket.requires_reason_recheck ? 'Có' : 'Không') + '</td>' +
+            '<td class="updated">' + updateInfo + '</td>' +
+            '<td><span class="status waiting">' + ticket.status + '</span></td>' +
           '</tr>';
         });
       }
