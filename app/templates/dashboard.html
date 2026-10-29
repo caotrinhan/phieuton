@@ -246,7 +246,7 @@
           <th>Tổng</th>
           <th>TTVT đã xác minh lý do</th>
           <th>TL xác minh(%)</th>
-          <th>TTVT Cần xác minh lại lý do</th>
+          <th>TTVT Cần xác minh lại lý do tồn</th>
         </tr>
       </thead>
       <tbody>
@@ -363,7 +363,7 @@
               <span style="display: block; font-size: 10px; background: #e11d48; color: #fff; padding: 1px 4px; border-radius: 3px; font-weight: bold; margin-top: 2px;">>=100H CẦN XÁC MINH</span>
             {% endif %}
           </td>
-          <td>{{ 'Lý do tồn chưa đúng, đề nghị xác minh lại lý do tồn' if ticket.requires_reason_recheck else '' }}</td>
+          <td>{{ 'Lý do tồn chưa đúng, đề nghị xác minh lại lý do tồn' if ticket.requires_reason_recheck else '✓' }}</td>
           <td class="reason-preview" style="{% if not has_reason %}{% if is_over_100 %}color: #9f1239; font-weight: 800;{% else %}color: #dc2626; font-weight: 600;{% endif %}{% else %}color: #16a34a;{% endif %}">
             {{ ticket.reason or 'Chưa xác minh' }}
             {% if ticket.reason_updated_by and ticket.reason_updated_at %}
