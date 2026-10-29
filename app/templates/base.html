@@ -40,23 +40,6 @@
     document.querySelectorAll('.detail-panel').forEach(function(panel) {
       if (!panel.querySelector('.panel-help')) panel.remove();
     });
-    document.querySelectorAll('.detail-table').forEach(function(table) {
-      var reasonHeader = table.querySelector('thead th:nth-child(8)');
-      if (reasonHeader) {
-        reasonHeader.innerHTML = 'Lý do tồn<br><small>(người dùng · ngày giờ cập nhật)</small>';
-      }
-      table.querySelectorAll('tbody tr').forEach(function(row) {
-        var cells = row.querySelectorAll('td');
-        var reasonCell = cells[7];
-        var updatedCell = row.querySelector('.updated');
-        if (reasonCell && updatedCell && updatedCell.textContent.trim() !== 'Chưa cập nhật') {
-          var meta = document.createElement('small');
-          meta.className = 'reason-meta';
-          meta.textContent = '(' + updatedCell.textContent.replace(/\s+/g, ' ').trim() + ')';
-          reasonCell.appendChild(meta);
-        }
-      });
-    });
     document.querySelectorAll('.summary-panel tbody tr:not(.summary-total)').forEach(function(row) {
       var cells = row.querySelectorAll('td');
       var rate = parseFloat((cells[cells.length - 1] || {}).textContent);
