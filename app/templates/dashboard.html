@@ -264,7 +264,7 @@
       </thead>
       <tbody>
         {% for row in summary_rows %}
-        <tr{% if row.reported == row.total %} class="row-success"{% endif %}>
+        <tr class="{% if row.reported == row.total %}row-success{% else %}row-danger{% endif %}">
           <td>{{ row.stt }}</td>
           <td>{{ row.unit }}</td>
           <td>{{ row["MegaWAN/MetroNET"] }}</td>
