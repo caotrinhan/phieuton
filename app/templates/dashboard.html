@@ -264,7 +264,7 @@
       </thead>
       <tbody>
         {% for row in summary_rows %}
-        <tr>
+        <tr{% if row.reported == row.total %} class="row-success"{% endif %}>
           <td>{{ row.stt }}</td>
           <td>{{ row.unit }}</td>
           <td>{{ row["MegaWAN/MetroNET"] }}</td>
@@ -272,7 +272,7 @@
           <td>{{ row.mytv }}</td>
           <td>{{ row.mesh }}</td>
           <td>{{ row.camera }}</td>
-          <td style="font-weight: bold; color: #dc2626; background-color: #fef2f2;">{{ row.total }}</td>
+          <td style="font-weight: bold;">{{ row.total }}</td>
           <td>{{ row.reported }}</td>
           <td>{{ (row.reported * 100 / row.total)|round(2) }}</td>
           <td>{{ row.requires_reason_recheck }}</td>
