@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nguồn Power BI - Phiếu tồn từ 48 giờ</title>
+</head>
+<body>
+  <table id="tickets-over-48h">
+    <thead>
+      <tr>
+        <th>Đơn vị xử lý</th>
+        <th>Tỉnh</th>
+        <th>Loại hợp đồng</th>
+        <th>Loại thiết bị</th>
+        <th>Tiến trình</th>
+        <th>Mã thuê bao</th>
+        <th>Tên thuê bao</th>
+        <th>Ngày yêu cầu</th>
+        <th>Thời gian tồn (giờ)</th>
+        <th>Địa chỉ lắp đặt</th>
+        <th>Số điện thoại</th>
+        <th>Trạng thái</th>
+        <th>Lý do tồn</th>
+        <th>Yêu cầu xác minh lại</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ticket in tickets %}
+      <tr>
+        <td>{{ ticket.unit }}</td>
+        <td>{{ ticket.province }}</td>
+        <td>{{ ticket.contract_type or '' }}</td>
+        <td>{{ ticket.equipment_type or '' }}</td>
+        <td>{{ ticket.progress }}</td>
+        <td>{{ ticket.subscriber_code }}</td>
+        <td>{{ ticket.subscriber_name or '' }}</td>
+        <td>{{ ticket.request_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+        <td>{{ ticket.age_hours }}</td>
+        <td>{{ ticket.address or '' }}</td>
+        <td>{{ ticket.phone or '' }}</td>
+        <td>{{ ticket.status }}</td>
+        <td>{{ ticket.reason or '' }}</td>
+        <td>{{ 'Có' if ticket.requires_reason_recheck else 'Không' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

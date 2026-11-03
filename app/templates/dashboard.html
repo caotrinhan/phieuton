@@ -221,6 +221,9 @@
         Chưa có dữ liệu
       {% endif %}
     </p>
+    <p style="margin: 6px 0 0; font-size: 13px;">
+      <a href="{{ url_for('main.powerbi_over_48h') }}" style="color: #0284c7; font-weight: 600; text-decoration: underline;">Nguồn Power BI - chỉ phiếu tồn từ 48 giờ trở lên</a>
+    </p>
     
     {% if batch %}
     <div style="margin-top: 6px; font-size: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
@@ -522,7 +525,7 @@
 </section>
 {% endmacro %}
 
-{{ ticket_table(tickets, 'over', 'Chi tiết phiếu tồn từ 48 giờ', 'Chưa có phiếu tồn từ 48 giờ trở lên.') }}
+{{ ticket_table(tickets, 'over', 'Chi tiết phiếu tồn trên 48 giờ', 'Chưa có phiếu tồn trên 48 giờ trở lên.') }}
 {{ ticket_table(under_48h_tickets, 'under', 'Chi tiết phiếu tồn dưới 48 giờ', 'Chưa có phiếu tồn dưới 48 giờ.') }}
 
 {% if current_user.is_authenticated and current_user.is_admin %}

@@ -256,6 +256,12 @@ def dashboard():
     )
 
 
+@main_bp.get("/powerbi/over-48h")
+def powerbi_over_48h():
+    over_48h_tickets, _ = _get_open_ticket_groups()
+    return render_template("powerbi_over_48h.html", tickets=over_48h_tickets)
+
+
 @main_bp.post("/change-password")
 @login_required
 def change_password():
