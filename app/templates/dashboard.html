@@ -378,11 +378,9 @@
           <td>{{ (row.reported * 100 / row.total)|round(2) }}</td>
           <td>{{ row.requires_reason_recheck }}</td>
         </tr>
-        {% else %}
-        <tr><td colspan="11">Chưa có dữ liệu tổng hợp.</td></tr>
         {% endfor %}
         <tr class="summary-total" style="font-weight: bold; background: #f8fafc;">
-          <td></td>
+          <td>TỔNG</td>
           <td><strong>Tổng</strong></td>
           <td>{{ summary_total["MegaWAN/MetroNET"] }}</td>
           <td>{{ summary_total.fiber }}</td>
@@ -397,6 +395,9 @@
       </tbody>
     </table>
   </div>
+  {% if not summary_rows %}
+  <p class="table-empty-message">Chưa có dữ liệu tổng hợp.</p>
+  {% endif %}
 </section>
 <div class="center_danger"><h4>YC xác minh lại lý do tồn: quá ngày hẹn KH, quá ngày KH hẹn, phiếu báo đã thi công nhưng quá lâu chưa đóng phiếu...</h4></div>
 
@@ -1029,7 +1030,8 @@
     });
   }
 
-  function renderTicketRows(tickets) {
+  function renderTicketRows(tickets, groupName) {
+    var isUnder = groupName === 'under';
     if (!tickets.length) return '';
     return tickets.map(function(ticket, index) {
       var hasReason = ticket.reason && ticket.reason.trim() !== '';
@@ -1111,7 +1113,7 @@
       groups.forEach(function(group) {
         var tbody = document.querySelector('.detail-table tbody[data-ticket-group="' + group.name + '"]');
         if (!tbody) return;
-        tbody.innerHTML = renderTicketRows(group.tickets);
+        tbody.innerHTML = renderTicketRows(group.tickets, group.name);
         var emptyMessage = document.querySelector('[data-empty-group="' + group.name + '"]');
         if (emptyMessage) emptyMessage.hidden = group.tickets.length > 0;
         var count = document.querySelector('[data-count-group="' + group.name + '"]');
