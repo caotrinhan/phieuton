@@ -26,6 +26,90 @@
     vertical-align: middle;
   }
 
+  .detail-panel .table-wrap {
+    max-height: 72vh;
+    overflow: auto;
+  }
+
+  .detail-panel .table-wrap thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #f8fafc;
+    box-shadow: 0 1px 0 #cbd5e1;
+  }
+
+  .detail-panel .detail-table tbody tr:nth-child(even) {
+    filter: brightness(0.985);
+  }
+
+  .ticket-table-tools {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+  }
+
+  .ticket-table-tools input,
+  .ticket-table-tools select,
+  .ticket-table-pagination button {
+    min-height: 36px;
+    padding: 6px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #fff;
+    color: #0f172a;
+    font: inherit;
+  }
+
+  .ticket-table-tools input {
+    width: min(100%, 340px);
+  }
+
+  .ticket-table-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 16px;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .ticket-table-pagination button {
+    cursor: pointer;
+  }
+
+  .ticket-table-pagination button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .ticket-table-page-info {
+    min-width: 120px;
+    color: #475569;
+    text-align: center;
+    font-size: 13px;
+  }
+
+  @media (max-width: 640px) {
+    .ticket-table-tools {
+      align-items: stretch;
+    }
+
+    .ticket-table-tools input {
+      width: 100%;
+    }
+
+    .ticket-table-pagination {
+      justify-content: center;
+    }
+  }
+
   .summary-panel table th:nth-child(3) {
     background-color: #0369a1;
     color: #fff;
@@ -333,6 +417,20 @@
     </div>
     {% endif %}
   </div>
+  {% if group_name == 'under' %}
+  <div class="ticket-table-tools" aria-label="Tìm kiếm và phân trang phiếu dưới 48 giờ">
+    <label for="under-ticket-search" class="sr-only">Tìm phiếu theo mã, tên, đơn vị hoặc địa chỉ</label>
+    <input id="under-ticket-search" type="search" placeholder="Tìm mã, tên, đơn vị, địa chỉ, số điện thoại...">
+    <label for="under-ticket-page-size" style="font-size: 13px; color: #475569;">Số dòng/trang</label>
+    <select id="under-ticket-page-size">
+      <option value="25" selected>25 dòng</option>
+      <option value="50">50 dòng</option>
+      <option value="100">100 dòng</option>
+      <option value="all">Tất cả</option>
+    </select>
+    <span id="under-ticket-result-count" aria-live="polite" style="font-size: 13px; color: #475569;"></span>
+  </div>
+  {% endif %}
   <div class="table-wrap">
     <table class="detail-table" data-ticket-group="{{ group_name }}">
       <thead>
@@ -399,6 +497,15 @@
       </tbody>
     </table>
   </div>
+  {% if group_name == 'under' %}
+  <nav class="ticket-table-pagination" aria-label="Phân trang phiếu dưới 48 giờ">
+    <button type="button" data-page-action="first">Đầu</button>
+    <button type="button" data-page-action="previous">Trước</button>
+    <span class="ticket-table-page-info" id="under-ticket-page-info" aria-live="polite"></span>
+    <button type="button" data-page-action="next">Sau</button>
+    <button type="button" data-page-action="last">Cuối</button>
+  </nav>
+  {% endif %}
 </section>
 {% endmacro %}
 
@@ -715,7 +822,7 @@
 
     var currentVal = select.value;
     var units = new Set();
-    document.querySelectorAll('.detail-table tbody tr').forEach(function(tr) {
+    document.querySelectorAll('.detail-table[data-ticket-group="over"] tbody tr').forEach(function(tr) {
       var u = tr.getAttribute('data-unit');
       if (u) units.add(u.trim());
     });
@@ -737,7 +844,7 @@
     var selectedUnit = select ? select.value : '';
     var visibleCount = 0;
 
-    var rows = document.querySelectorAll('.detail-table tbody tr');
+    var rows = document.querySelectorAll('.detail-table[data-ticket-group="over"] tbody tr');
     rows.forEach(function(tr) {
       var u = tr.getAttribute('data-unit');
       if (!u && tr.children.length === 1) return; // Bỏ qua hàng trống thông báo
@@ -750,19 +857,90 @@
       }
     });
 
-    // Đánh lại STT riêng trong từng bảng
-    document.querySelectorAll('.detail-table tbody').forEach(function(tbody) {
-      var stt = 1;
-      tbody.querySelectorAll('tr').forEach(function(tr) {
-        if (tr.style.display !== 'none' && tr.children.length > 1) {
-          tr.children[0].textContent = stt++;
-        }
-      });
+    var stt = 1;
+    rows.forEach(function(tr) {
+      if (tr.style.display !== 'none' && tr.children.length > 1) {
+        tr.children[0].textContent = stt++;
+      }
     });
 
     var countElem = document.getElementById('detail-row-count');
     if (countElem) countElem.textContent = visibleCount + ' dòng';
   }
+
+  var underTicketPage = 1;
+
+  function normalizeSearchText(value) {
+    return String(value || '').toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  function applyUnderTicketPagination(resetPage) {
+    var tbody = document.querySelector('.detail-table tbody[data-ticket-group="under"]');
+    var search = document.getElementById('under-ticket-search');
+    var pageSizeSelect = document.getElementById('under-ticket-page-size');
+    if (!tbody || !search || !pageSizeSelect) return;
+    if (resetPage) underTicketPage = 1;
+
+    var rows = Array.from(tbody.querySelectorAll('tr[data-ticket-id]'));
+    var query = normalizeSearchText(search.value.trim());
+    var matchingRows = rows.filter(function(row) {
+      return !query || normalizeSearchText(row.textContent).includes(query);
+    });
+    var pageSize = pageSizeSelect.value === 'all' ? matchingRows.length || 1 : Number(pageSizeSelect.value);
+    var pageCount = Math.max(1, Math.ceil(matchingRows.length / pageSize));
+    underTicketPage = Math.min(underTicketPage, pageCount);
+
+    rows.forEach(function(row) { row.style.display = 'none'; });
+    var startIndex = (underTicketPage - 1) * pageSize;
+    matchingRows.slice(startIndex, startIndex + pageSize).forEach(function(row, index) {
+      row.style.display = '';
+      row.cells[0].textContent = startIndex + index + 1;
+    });
+
+    var firstResult = matchingRows.length ? startIndex + 1 : 0;
+    var lastResult = Math.min(startIndex + pageSize, matchingRows.length);
+    var resultCount = document.getElementById('under-ticket-result-count');
+    if (resultCount) {
+      resultCount.textContent = matchingRows.length ?
+        'Hiển thị ' + firstResult + '–' + lastResult + ' / ' + matchingRows.length + ' phiếu' :
+        'Không tìm thấy phiếu phù hợp';
+    }
+
+    var pageInfo = document.getElementById('under-ticket-page-info');
+    if (pageInfo) pageInfo.textContent = 'Trang ' + underTicketPage + ' / ' + pageCount;
+    var pagination = document.querySelector('.ticket-table-pagination[aria-label="Phân trang phiếu dưới 48 giờ"]');
+    if (pagination) {
+      pagination.querySelector('[data-page-action="first"]').disabled = underTicketPage <= 1;
+      pagination.querySelector('[data-page-action="previous"]').disabled = underTicketPage <= 1;
+      pagination.querySelector('[data-page-action="next"]').disabled = underTicketPage >= pageCount;
+      pagination.querySelector('[data-page-action="last"]').disabled = underTicketPage >= pageCount;
+    }
+  }
+
+  var underTicketSearch = document.getElementById('under-ticket-search');
+  if (underTicketSearch) {
+    underTicketSearch.addEventListener('input', function() { applyUnderTicketPagination(true); });
+  }
+  var underTicketPageSize = document.getElementById('under-ticket-page-size');
+  if (underTicketPageSize) {
+    underTicketPageSize.addEventListener('change', function() { applyUnderTicketPagination(true); });
+  }
+  document.querySelectorAll('.ticket-table-pagination [data-page-action]').forEach(function(button) {
+    button.addEventListener('click', function() {
+      var action = button.dataset.pageAction;
+      if (action === 'first') underTicketPage = 1;
+      if (action === 'previous') underTicketPage = Math.max(1, underTicketPage - 1);
+      if (action === 'next') underTicketPage += 1;
+      if (action === 'last') {
+        var resultCount = document.getElementById('under-ticket-result-count');
+        var pageSize = document.getElementById('under-ticket-page-size');
+        var results = resultCount ? Number((resultCount.textContent.match(/\/\s*(\d+)/) || [])[1]) : 0;
+        var size = pageSize && pageSize.value !== 'all' ? Number(pageSize.value) : results || 1;
+        underTicketPage = Math.max(1, Math.ceil(results / size));
+      }
+      applyUnderTicketPagination(false);
+    });
+  });
 
   // Sắp xếp theo đơn vị, thời gian tồn hoặc yêu cầu xác minh lại
   function sortTable(column, preserveOrder) {
@@ -807,6 +985,7 @@
     });
 
     applyFilter();
+    applyUnderTicketPagination(false);
   }
 
   // Gắn sự kiện click Sort và Filter
@@ -922,6 +1101,7 @@
       initUnitDropdown();
       if (currentSortColumn) sortTable(currentSortColumn, true);
       else applyFilter();
+      applyUnderTicketPagination(false);
       bindDynamicEvents();
     })
     .catch(function(error) { console.error('Auto refresh error:', error); });
@@ -929,6 +1109,8 @@
 
   // Khởi chạy khi load trang
   initUnitDropdown();
+  applyFilter();
+  applyUnderTicketPagination(false);
   bindDynamicEvents();
   setInterval(refreshTableData, 300000);
 })();
