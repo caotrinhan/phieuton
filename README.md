@@ -159,12 +159,6 @@ Migration thêm cột `progress` vào bảng `tickets`. Upload sẽ lưu tất c
 6. Hệ thống lưu người cập nhật, thời gian cập nhật và lịch sử cũ/mới.
 7. Xuất Excel khi cần báo cáo.
 
-Nguồn HTML riêng cho Power BI, chỉ gồm một bảng phiếu tồn từ 48 giờ trở lên:
-
-```text
-http://<server>:8888/powerbi/over-48h
-```
-
 ## 11. Sao lưu
 
 ```powershell

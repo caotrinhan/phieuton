@@ -221,9 +221,6 @@
         Chưa có dữ liệu
       {% endif %}
     </p>
-    <p style="margin: 6px 0 0; font-size: 13px;">
-      <a href="{{ url_for('main.powerbi_over_48h') }}" style="color: #0284c7; font-weight: 600; text-decoration: underline;">Nguồn Power BI - chỉ phiếu tồn từ 48 giờ trở lên</a>
-    </p>
     
     {% if batch %}
     <div style="margin-top: 6px; font-size: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
@@ -439,7 +436,7 @@
   </div>
   {% endif %}
   <div class="table-wrap">
-    <table class="detail-table" data-ticket-group="{{ group_name }}">
+    <table id="tickets-{{ group_name }}-48h" class="detail-table" data-ticket-group="{{ group_name }}">
       <thead>
         <tr>
           <th>STT</th>
