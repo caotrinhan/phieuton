@@ -88,6 +88,7 @@ class Ticket(db.Model):
     contract_type = db.Column(db.String(100))
     status = db.Column(db.String(100), nullable=False, default=STATUS_PENDING, index=True)
     equipment_type = db.Column(db.String(100))
+    progress = db.Column(db.String(150), nullable=False, default="")
     subscriber_code = db.Column(db.String(100), nullable=False, index=True)
     subscriber_name = db.Column(db.String(255))
     address = db.Column(db.String(500))

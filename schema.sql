@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS tickets (
 	contract_type VARCHAR(100),
 	status VARCHAR(100) NOT NULL,
 	equipment_type VARCHAR(100),
+	progress VARCHAR(150) NOT NULL DEFAULT '',
 	subscriber_code VARCHAR(100) NOT NULL,
 	subscriber_name VARCHAR(255),
 	address VARCHAR(500),

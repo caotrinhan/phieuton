@@ -135,6 +135,14 @@ mysql -u root -p phieuton < migration_dynamic_age.sql
 
 Migration cho phép cột `age_hours` cũ nhận `NULL`; hệ thống không còn ghi giá trị giờ tồn vào cột này mà tính trực tiếp từ `request_at`.
 
+Khi cập nhật chức năng lưu tiến trình, chạy migration một lần trên database hiện có:
+
+```powershell
+mysql -u root -p phieuton < migration_ticket_progress.sql
+```
+
+Migration thêm cột `progress` vào bảng `tickets`. Upload sẽ lưu tất cả dòng có mã thuê bao và ngày yêu cầu hợp lệ, kèm giá trị `TIEN_TRINH`; dashboard chỉ hiển thị dòng có tiến trình `Đã giao thi công`.
+
 ## 9. Trạng thái phiếu
 
 - `CHƯA HOÀN CÔNG`: mã thuê bao có trong file upload gần nhất.
@@ -145,8 +153,8 @@ Migration cho phép cột `age_hours` cũ nhận `NULL`; hệ thống không cò
 
 1. Đăng nhập.
 2. Upload file Cà Mau và Bạc Liêu.
-3. Hệ thống lưu các dòng có mã thuê bao và ngày yêu cầu hợp lệ; mã đã có được cập nhật, không tạo bản ghi trùng.
-4. Dashboard tính giờ tồn từ ngày yêu cầu và hiển thị hai bảng: từ 48 giờ trở lên và dưới 48 giờ.
+3. Hệ thống lưu tất cả dòng có mã thuê bao và ngày yêu cầu hợp lệ, kèm giá trị `TIEN_TRINH`; mã đã có được cập nhật, không tạo bản ghi trùng.
+4. Dashboard chỉ hiển thị dòng có tiến trình `Đã giao thi công`, phân thành hai bảng: từ 48 giờ trở lên và dưới 48 giờ.
 5. Người dùng nhập lý do và có thể đính kèm hình ảnh.
 6. Hệ thống lưu người cập nhật, thời gian cập nhật và lịch sử cũ/mới.
 7. Xuất Excel khi cần báo cáo.

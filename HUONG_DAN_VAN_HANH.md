@@ -6,7 +6,7 @@ Tài liệu này dành cho người tiếp nhận, vận hành, bảo trì và p
 
 `VNPT CÀ MAU - HỆ THỐNG GIÁM SÁT PHIẾU TỒN BĂNG RỘNG CỐ ĐỊNH`
 
-Ứng dụng nhận hai file Excel template mới Cà Mau và Bạc Liêu, lưu các dòng có mã thuê bao/ngày yêu cầu hợp lệ vào MySQL, tính giờ tồn động từ ngày yêu cầu và hiển thị riêng hai bảng từ 48 giờ trở lên/dưới 48 giờ.
+Ứng dụng nhận hai file Excel template mới Cà Mau và Bạc Liêu, lưu các dòng có mã thuê bao/ngày yêu cầu hợp lệ cùng giá trị `TIEN_TRINH` vào MySQL, tính giờ tồn động từ ngày yêu cầu và chỉ hiển thị phiếu có tiến trình `Đã giao thi công` trong hai bảng từ 48 giờ trở lên/dưới 48 giờ.
 
 Thông tin triển khai hiện tại:
 
@@ -48,7 +48,7 @@ ton_lap_dat_web/
 |-- migration_status.sql
 |-- migration_dashboard.sql
 |-- migration_dynamic_age.sql
-|-- migration_dynamic_age.sql
+|-- migration_ticket_progress.sql
 |-- start_web.ps1
 |-- stop_web.ps1
 |-- status_web.ps1
@@ -127,7 +127,8 @@ Nếu thay đổi quy trình đăng nhập, phân quyền hoặc session, sửa 
 Đây là route nghiệp vụ chính:
 
 - `/`: dashboard trang chủ.
-- `/upload-new`: nhận hai file Excel template mới, cập nhật mã đã có và đánh dấu mã vắng khỏi file là đã hoàn công.
+- `/upload-new`: nhận hai file Excel template mới, lưu tất cả các dòng có mã thuê bao/ngày yêu cầu hợp lệ cùng giá trị `TIEN_TRINH`, cập nhật mã đã có và đánh dấu mã vắng khỏi file là đã hoàn công.
+- Hai file Excel phải có cột `TIEN_TRINH`; dashboard và API chỉ đưa tiến trình `Đã giao thi công` (không phân biệt hoa/thường, bỏ khoảng trắng đầu/cuối) vào hai nhóm thời gian tồn.
 - `/tickets/<id>/reason`: cập nhật lý do và nhận ảnh.
 - `/ticket-images/<id>`: trả ảnh cho người đã đăng nhập.
 - `/export.xlsx`: xuất báo cáo Excel.
@@ -269,6 +270,10 @@ Migration có câu lệnh chuyển giờ, vì vậy chỉ chạy một lần tr�
 #### `migration_dynamic_age.sql`
 
 Cho phép cột `tickets.age_hours` cũ nhận `NULL`. Ứng dụng không còn lưu giờ tồn vào cột này; giờ tồn được tính từ `request_at` khi truy vấn. Chạy một lần khi nâng cấp database đang sử dụng.
+
+#### `migration_ticket_progress.sql`
+
+Thêm cột `tickets.progress` để lưu giá trị từ `TIEN_TRINH` trong Excel. Chạy một lần khi nâng cấp database đang sử dụng.
 
 ## 4. Khởi tạo hệ thống mới
 
@@ -561,7 +566,7 @@ Kiểm tra nghiệp vụ:
 
 1. Đăng nhập.
 2. Upload đủ hai file Excel.
-3. Xác nhận dashboard có đúng một bảng Tổng hợp và một bảng Chi tiết.
+3. Xác nhận các dòng trong file được lưu/cập nhật cùng giá trị `TIEN_TRINH`; chỉ dòng có tiến trình `Đã giao thi công` xuất hiện trong hai bảng thời gian tồn.
 4. Bấm mã thuê bao hoặc tên thuê bao.
 5. Nhập lý do và chọn ảnh.
 6. Bấm lưu.

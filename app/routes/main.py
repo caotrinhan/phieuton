@@ -15,6 +15,7 @@ from ..time_utils import local_now
 main_bp = Blueprint("main", __name__)
 
 ACTIVE_USERS = {}
+UPLOAD_PROGRESS_STATUS = "đã giao thi công"
 OPEN_TICKET_EQUIPMENT_TYPES = (
     "Internet tr",
     "Leasedline",
@@ -81,6 +82,9 @@ def _get_open_ticket_groups(now: datetime | None = None) -> tuple[list[Ticket], 
     under_48h = []
     threshold = timedelta(hours=48)
     for ticket in tickets:
+        progress = (ticket.progress or "").strip().casefold()
+        if progress != UPLOAD_PROGRESS_STATUS:
+            continue
         if now - ticket.request_at >= threshold:
             over_48h.append(ticket)
         else:
@@ -90,7 +94,7 @@ def _get_open_ticket_groups(now: datetime | None = None) -> tuple[list[Ticket], 
 
 def load_new_tickets(ca_mau_path, bac_lieu_path):
     """
-    Đọc và gộp toàn bộ các dòng có mã thuê bao trong hai file template mới.
+    Đọc các dòng có mã thuê bao trong hai file template mới.
     """
     df_cm = pd.read_excel(ca_mau_path)
     df_bl = pd.read_excel(bac_lieu_path)
@@ -98,7 +102,7 @@ def load_new_tickets(ca_mau_path, bac_lieu_path):
     df_cm.columns = df_cm.columns.astype(str).str.strip().str.lower()
     df_bl.columns = df_bl.columns.astype(str).str.strip().str.lower()
 
-    required_columns = {"ma_tb", "ngay_yeucau"}
+    required_columns = {"ma_tb", "ngay_yeucau", "tien_trinh"}
     for frame, source in ((df_cm, "Cà Mau"), (df_bl, "Bạc Liêu")):
         missing_columns = required_columns.difference(frame.columns)
         if missing_columns:
@@ -125,6 +129,7 @@ def load_new_tickets(ca_mau_path, bac_lieu_path):
             "province": "" if pd.isna(row.get("tentinh")) else str(row.get("tentinh")).strip(),
             "contract_type": "" if pd.isna(row.get("loai_hopdong")) else str(row.get("loai_hopdong")).strip(),
             "equipment_type": "" if pd.isna(row.get("tenloai_tb")) else str(row.get("tenloai_tb")).strip(),
+            "progress": "" if pd.isna(row["tien_trinh"]) else str(row["tien_trinh"]).strip(),
             "subscriber_code": subscriber_code,
             "subscriber_name": "" if pd.isna(row.get("ten_kh")) else str(row.get("ten_kh")).strip(),
             "request_at": request_at.to_pydatetime(),
