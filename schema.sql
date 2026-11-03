@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS tickets (
 	address VARCHAR(500),
 	phone VARCHAR(30),
 	request_at DATETIME NOT NULL,
-	age_hours DECIMAL(10,1) NOT NULL,
+	age_hours DECIMAL(10,1) NULL,
 	reason TEXT,
 	requires_reason_recheck BOOLEAN NOT NULL DEFAULT FALSE,
 	reason_updated_by_id INT,

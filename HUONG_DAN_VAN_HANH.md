@@ -6,7 +6,7 @@ Tài liệu này dành cho người tiếp nhận, vận hành, bảo trì và p
 
 `VNPT CÀ MAU - HỆ THỐNG GIÁM SÁT PHIẾU TỒN BĂNG RỘNG CỐ ĐỊNH`
 
-Ứng dụng nhận hai file Excel Cà Mau và Bạc Liêu, lọc các phiếu tồn trên 48 giờ, lưu dữ liệu vào MySQL, hiển thị bảng Tổng hợp/Chi tiết, cho phép cập nhật lý do tồn và hình ảnh minh họa.
+Ứng dụng nhận hai file Excel template mới Cà Mau và Bạc Liêu, lưu các dòng có mã thuê bao/ngày yêu cầu hợp lệ vào MySQL, tính giờ tồn động từ ngày yêu cầu và hiển thị riêng hai bảng từ 48 giờ trở lên/dưới 48 giờ.
 
 Thông tin triển khai hiện tại:
 
@@ -32,9 +32,6 @@ ton_lap_dat_web/
 |   |   |-- __init__.py
 |   |   |-- auth.py
 |   |   |-- main.py
-|   |-- services/
-|   |   |-- __init__.py
-|   |   |-- import_service.py
 |   |-- static/
 |   |   |-- style.css
 |   |-- templates/
@@ -50,6 +47,8 @@ ton_lap_dat_web/
 |-- schema.sql
 |-- migration_status.sql
 |-- migration_dashboard.sql
+|-- migration_dynamic_age.sql
+|-- migration_dynamic_age.sql
 |-- start_web.ps1
 |-- stop_web.ps1
 |-- status_web.ps1
@@ -128,32 +127,16 @@ Nếu thay đổi quy trình đăng nhập, phân quyền hoặc session, sửa 
 Đây là route nghiệp vụ chính:
 
 - `/`: dashboard trang chủ.
-- `/upload`: nhận hai file Excel, lọc và lưu batch.
+- `/upload-new`: nhận hai file Excel template mới, cập nhật mã đã có và đánh dấu mã vắng khỏi file là đã hoàn công.
 - `/tickets/<id>/reason`: cập nhật lý do và nhận ảnh.
 - `/ticket-images/<id>`: trả ảnh cho người đã đăng nhập.
 - `/export.xlsx`: xuất báo cáo Excel.
 - `/users`: danh sách tài khoản admin.
 - `/users` POST: tạo tài khoản.
 
-Khi sửa luồng upload, cần kiểm tra đồng thời `import_service.py`, `models.py`, `schema.sql` và migration nếu có cột mới.
+Khi sửa luồng upload, cần kiểm tra `load_new_tickets` trong `main.py`, `models.py`, `schema.sql` và migration database.
 
-### 3.3. Services
-
-#### `app/services/import_service.py`
-
-Đọc và chuẩn hóa hai file Excel:
-
-- Cà Mau: dùng các cột `LOAI TB`, `TRANGTHAI_HD`, `TEN_LOAIHD`, `DONVI_XULY_PHIEU`, `MA_TB`, `TEN_TB`, `NGAY LAPPHIEU`.
-- Bạc Liêu: dùng các cột `Loaihinh Tb`, `Trangthai Hd`, `Ten Loaihd`, `Tendv Ld`, `Ma Tb`, `Ten Tb`, `Ngay Yc`, `Diachi Ld`, `So Dt`.
-- Lọc loại thiết bị Fiber, MyTV, Mesh, Camera.
-- Lọc trạng thái `Đã giao thi công`.
-- Lọc loại hợp đồng được hỗ trợ.
-- Tính `age_hours` và giữ phiếu trên 48 giờ.
-- Trả về danh sách record chuẩn hóa cho route upload.
-
-Nếu mẫu Excel thay đổi tên cột, phải sửa mapping và kiểm tra lại bằng file mẫu trước khi triển khai.
-
-### 3.4. Giao diện
+### 3.3. Giao diện
 
 #### `app/templates/base.html`
 
@@ -173,7 +156,7 @@ Dashboard trang chủ:
 - Thông tin batch mới nhất.
 - Kết quả upload gần nhất.
 - Một bảng Tổng hợp.
-- Một bảng Chi tiết.
+- Hai bảng Chi tiết theo giờ tồn: từ 48 giờ trở lên và dưới 48 giờ.
 - Modal cập nhật lý do và upload ảnh.
 - Modal xem ảnh, zoom và xoay.
 
@@ -183,8 +166,8 @@ Khi sửa bảng, phải giữ đúng tên trường được truyền từ `mai
 
 Form chọn hai file Excel:
 
-- File Cà Mau: `name="ca_mau"`.
-- File Bạc Liêu: `name="bac_lieu"`.
+- File Cà Mau: `name="ca_mau_moi"`.
+- File Bạc Liêu: `name="bac_lieu_moi"`.
 - Bắt buộc `multipart/form-data`.
 
 #### `app/templates/login.html`
@@ -282,6 +265,10 @@ Migration cho dashboard mới:
 - Chuyển dữ liệu thời gian cũ từ UTC sang giờ Việt Nam.
 
 Migration có câu lệnh chuyển giờ, vì vậy chỉ chạy một lần trên database tương ứng.
+
+#### `migration_dynamic_age.sql`
+
+Cho phép cột `tickets.age_hours` cũ nhận `NULL`. Ứng dụng không còn lưu giờ tồn vào cột này; giờ tồn được tính từ `request_at` khi truy vấn. Chạy một lần khi nâng cấp database đang sử dụng.
 
 ## 4. Khởi tạo hệ thống mới
 

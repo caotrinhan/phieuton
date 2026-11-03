@@ -129,7 +129,7 @@
 <div class="page-heading" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 16px;">
   <div style="flex: 1; min-width: 280px;">
     <p class="eyebrow" style="margin-bottom: 2px; font-weight: 700; color: #0284c7; letter-spacing: 0.5px;">VNPT CÀ MAU · 09/2026</p>
-    <h1 style="margin-bottom: 6px; color: #0f172a; font-weight: 800;">Phiếu tồn trên 48 giờ</h1>
+    <h1 style="margin-bottom: 6px; color: #0f172a; font-weight: 800;">Theo dõi phiếu chưa hoàn công</h1>
     <p style="margin: 0; color: #64748b; font-size: 13px;">
       {% if batch %}
         Dữ liệu xuất từ hệ thống OneBss và upload lên hệ thống lúc <strong>{{ batch.uploaded_at.strftime('%d/%m/%Y %H:%M:%S') }}</strong> · Người upload: <strong>{{ batch.uploaded_by.full_name }}</strong>
@@ -149,7 +149,7 @@
   <div class="heading-actions" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
     {% if current_user.is_authenticated %}
       {% if current_user.is_admin %}
-        <a class="button primary" href="{{ url_for('main.upload') }}" style="font-size: 13px; padding: 8px 14px; border-radius: 6px; font-weight: 600;">Upload file mới</a>
+        <a class="button primary" href="{{ url_for('main.upload_new_template') }}" style="font-size: 13px; padding: 8px 14px; border-radius: 6px; font-weight: 600;">Upload file mới</a>
         <button type="button" class="button secondary" id="openAdminResetBtn" style="font-size: 13px; padding: 8px 14px; border-radius: 6px; font-weight: 600;">Reset MK</button>
 
         <dialog class="reason-modal" id="adminResetModal">
@@ -215,8 +215,13 @@
 <section class="metrics" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 16px;">
 
   <div class="metric" style="background: rgba(239, 246, 255, 0.95); border-left: 5px solid #2563eb; padding: 14px 18px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);">
-    <span style="font-size: 11px; font-weight: 700; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.5px;">Phiếu tồn >48h</span>
-    <strong style="display: block; font-size: 22px; color: #1e40af; margin-top: 4px;">{{ tickets|length }}</strong>
+    <span style="font-size: 11px; font-weight: 700; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.5px;">Phiếu tồn >=48h</span>
+    <strong id="metric-over-count" style="display: block; font-size: 22px; color: #1e40af; margin-top: 4px;">{{ tickets|length }}</strong>
+  </div>
+
+  <div class="metric" style="background: rgba(240, 253, 244, 0.95); border-left: 5px solid #16a34a; padding: 14px 18px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);">
+    <span style="font-size: 11px; font-weight: 700; color: #15803d; text-transform: uppercase; letter-spacing: 0.5px;">Phiếu tồn &lt;48h</span>
+    <strong id="metric-under-count" style="display: block; font-size: 22px; color: #166534; margin-top: 4px;">{{ under_48h_tickets|length }}</strong>
   </div>
 
   <div class="metric" style="background: rgba(240, 253, 244, 0.95); border-left: 5px solid #16a34a; padding: 14px 18px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);">
@@ -239,10 +244,15 @@
 <section class="panel upload-result" style="padding: 10px 18px; font-size: 13px; margin-bottom: 16px;">
   <span><strong>Kết quả upload gần nhất:</strong> Phát sinh mới <span style="color: #d97706; font-weight: 700;">{{ batch.new_tickets }}</span> phiếu · Đã xử lý <span style="color: #16a34a; font-weight: 700;">{{ batch.status_changed_tickets }}</span> phiếu · Phiếu cũ <span style="color: #64748b; font-weight: 700;">{{ batch.existing_tickets }}</span> phiếu.</span>
 </section>
+<div style="width: 100%; max-width: 100%; background: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin: 20px auto; overflow: hidden; border: 1px solid #e5e7eb;">
+    <div style="position: relative; width: 100%; height: 750px; overflow: hidden;">
+        <iframe title="nhut" src="https://app.powerbi.com/view?r=eyJrIjoiMThlMjQ2NDktMjdjNy00ODBlLWE2NjMtNzEzYTVjMjM5NWIzIiwidCI6ImE0OWExODJkLWNmYTItNDkyYy05YzViLTQwYzQyYzU1NzFiMyIsImMiOjEwfQ%3D%3D" width="100%" height="850px" frameborder="0" allowFullScreen="true" style="border: none; position: absolute; top: -30px; left: 0;"></iframe>
+    </div>
+</div>
 <!-- Bảng Tổng hợp -->
 <section class="panel summary-panel" style="margin-bottom: 20px;">
   <div class="panel-title" style="padding: 14px 18px; border-bottom: 1px solid rgba(226, 232, 240, 0.8);">
-    <h2 style="margin: 0; color: #005aa0; font-weight: 700;">Tổng hợp phiếu tồn trên 48h theo đơn vị</h2>
+    <h2 style="margin: 0; color: #005aa0; font-weight: 700;">Tổng hợp phiếu tồn từ 48h theo đơn vị</h2>
     <span style="font-size: 12px; color: #64748b;">{{ summary_rows|length }} đơn vị</span>
   </div>
   <div class="table-wrap">
@@ -299,11 +309,11 @@
 </section>
 <div class="center_danger"><h4>YC xác minh lại lý do tồn: quá ngày hẹn KH, quá ngày KH hẹn, phiếu báo đã thi công nhưng quá lâu chưa đóng phiếu...</h4></div>
 
-<!-- Bảng Chi tiết -->
+{% macro ticket_table(table_tickets, group_name, heading, empty_text) %}
 <section class="panel detail-panel">
   <div class="panel-title" style="padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; border-bottom: 1px solid rgba(226, 232, 240, 0.8); gap: 10px;">
     <div>
-      <h2 style="margin-bottom: 2px; color: #005aa0; font-weight: 700;">Chi tiết phiếu tồn</h2>
+      <h2 style="margin-bottom: 2px; color: #005aa0; font-weight: 700;">{{ heading }} <span class="ticket-count" data-count-group="{{ group_name }}">{{ table_tickets|length }}</span></h2>
       <p class="panel-help" style="margin: 0; font-size: 12px; color: #64748b;">
         {% if current_user.is_authenticated and current_user.is_admin %}
         Nhấn mã thuê bao để cập nhật yêu cầu check lại; nhấn tên thuê bao để cập nhật lý do tồn/hình ảnh.
@@ -313,54 +323,45 @@
         Nhấn vào ảnh để xem phóng to ảnh.
       </p>
     </div>
-
-    <!-- Dropdown lọc theo DONVI_XULY_PHIEU -->
+    {% if group_name == 'over' %}
     <div style="display: flex; align-items: center; gap: 8px;">
       <label for="filter-donvi" style="font-size: 13px; font-weight: 600; color: #334155;">Đơn vị xử lý:</label>
       <select id="filter-donvi" style="padding: 6px 12px; font-size: 13px; border: 1px solid #cbd5e1; border-radius: 6px; background-color: #ffffff; color: #0f172a; cursor: pointer; outline: none; font-weight: 500;">
         <option value="">-- Tất cả đơn vị --</option>
       </select>
-      <span id="detail-row-count" style="font-size: 12px; font-weight: 600; color: #475569; margin-left: 6px;">{{ tickets|length }} dòng</span>
+      <span id="detail-row-count" style="font-size: 12px; font-weight: 600; color: #475569; margin-left: 6px;">{{ table_tickets|length }} dòng</span>
     </div>
+    {% endif %}
   </div>
   <div class="table-wrap">
-    <table class="detail-table">
+    <table class="detail-table" data-ticket-group="{{ group_name }}">
       <thead>
         <tr>
           <th>STT</th>
-          <!-- Tiêu đề có thể bấm để Sắp xếp theo Đơn vị -->
-          <th class="sortable-header" id="th-donvi" title="Nhấn để sắp xếp theo Đơn vị">
-            DONVI_XULY_PHIEU <span class="sort-icon" id="sort-icon-donvi">↕</span>
-          </th>
+          <th class="sortable-header sort-unit" title="Nhấn để sắp xếp theo Đơn vị">DONVI_XULY_PHIEU <span class="sort-icon sort-icon-unit">↕</span></th>
           <th>LOAI TB</th>
           <th>MA_TB</th>
           <th>TEN_TB</th>
           <th>NGAY LAPPHIEU</th>
-          <!-- Tiêu đề có thể bấm để Sắp xếp theo Thời gian tồn -->
-          <th class="sortable-header" id="th-thoigian" title="Nhấn để sắp xếp theo Thời gian tồn">
-            THOIGIAN_TON (h) <span class="sort-icon" id="sort-icon-thoigian">↕</span>
-          </th>
-          <th class="sortable-header" id="th-recheck" title="Nhấn để sắp xếp theo yêu cầu xác minh lại">
-            YC xác minh lại <span class="sort-icon" id="sort-icon-recheck">↕</span>
-          </th>
+          <th class="sortable-header sort-age" title="Nhấn để sắp xếp theo Thời gian tồn">THOIGIAN_TON (h) <span class="sort-icon sort-icon-age">↕</span></th>
+          <th class="sortable-header sort-recheck" title="Nhấn để sắp xếp theo yêu cầu xác minh lại">YC xác minh lại <span class="sort-icon sort-icon-recheck">↕</span></th>
           <th>Lý do tồn (TTVT báo cáo)</th>
           <th>Hình ảnh</th>
           <th>Diachi Ld</th>
           <th>So Dt</th>
           <th>TEN_LOAIHD</th>
-
           <th>Cập nhật</th>
           <th>TRANGTHAI_HD</th>
         </tr>
       </thead>
-      <tbody>
-        {% for ticket in tickets %}
+      <tbody data-ticket-group="{{ group_name }}">
+        {% for ticket in table_tickets %}
         {% set has_reason = ticket.reason and ticket.reason.strip() %}
-        {% set is_over_100 = ticket.age_hours and ticket.age_hours|float >= 100 %}
-        
+        {% set is_over_100 = ticket.age_hours >= 100 %}
         <tr class="{% if has_reason %}row-verified{% elif is_over_100 %}row-warning-heavy{% else %}row-warning-light{% endif %}{% if ticket.requires_reason_recheck %} row-recheck{% endif %}"
+            data-ticket-id="{{ ticket.id }}"
             data-unit="{{ ticket.unit }}"
-            data-hours="{{ ticket.age_hours or 0 }}"
+            data-hours="{{ ticket.age_hours }}"
             data-recheck="{{ 'true' if ticket.requires_reason_recheck else 'false' }}">
           <td>{{ loop.index }}</td>
           <td>{{ ticket.unit }}</td>
@@ -374,49 +375,35 @@
           </td>
           <td><button class="ticket-link ticket-name" type="button" data-modal="reason-modal-{{ ticket.id }}" data-ticket-unit="{{ ticket.unit }}">{{ ticket.subscriber_name }}</button></td>
           <td>{{ ticket.request_at.strftime('%d/%m/%Y') }}<br>{{ ticket.request_at.strftime('%H:%M:%S') }}</td>
-          <td class="hours">
-            {{ ticket.age_hours }}
-            {% if not has_reason and is_over_100 %}
-              <span style="display: block; font-size: 10px; background: #e11d48; color: #fff; padding: 1px 4px; border-radius: 3px; font-weight: bold; margin-top: 2px;">>=100H CẦN XÁC MINH</span>
-            {% endif %}
-          </td>
+          <td class="hours">{{ ticket.age_hours }}{% if not has_reason and is_over_100 %}<span style="display: block; font-size: 10px; background: #e11d48; color: #fff; padding: 1px 4px; border-radius: 3px; font-weight: bold; margin-top: 2px;">>=100H CẦN XÁC MINH</span>{% endif %}</td>
           <td>{{ 'X' if ticket.requires_reason_recheck else '' }}</td>
           <td class="reason-preview" style="{% if not has_reason %}{% if is_over_100 %}color: #9f1239; font-weight: 800;{% else %}color: #dc2626; font-weight: 600;{% endif %}{% else %}color: #16a34a;{% endif %}">
             {{ ticket.reason or 'Chưa xác minh' }}
-            {% if ticket.reason_updated_by and ticket.reason_updated_at %}
-              <small class="reason-meta">({{ ticket.reason_updated_by.email }} - {{ ticket.reason_updated_at.strftime('%d/%m/%Y %H:%M:%S') }})</small>
-            {% endif %}
+            {% if ticket.reason_updated_by and ticket.reason_updated_at %}<small class="reason-meta">({{ ticket.reason_updated_by.email }} - {{ ticket.reason_updated_at.strftime('%d/%m/%Y %H:%M:%S') }})</small>{% endif %}
           </td>
           <td class="thumbnail-cell">
             {% for image in ticket.images %}
-            <button class="thumbnail-button" type="button" data-image-url="{{ url_for('main.ticket_image', image_id=image.id) }}" data-image-name="{{ image.original_filename }}" style="background: none; border: 1px solid var(--line); border-radius: 4px; padding: 2px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin-right: 4px; margin-bottom: 4px;" title="{{ image.original_filename }}">
-              <img src="{{ url_for('main.ticket_image', image_id=image.id) }}" alt="{{ image.original_filename }}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px; display: block;">
-            </button>
-            {% else %}
-            <span class="muted" style="color: #dc2626;">Chưa có</span>
-            {% endfor %}
+            <button class="thumbnail-button" type="button" data-image-url="{{ url_for('main.ticket_image', image_id=image.id) }}" data-image-name="{{ image.original_filename }}" style="background: none; border: 1px solid var(--line); border-radius: 4px; padding: 2px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin-right: 4px; margin-bottom: 4px;" title="{{ image.original_filename }}"><img src="{{ url_for('main.ticket_image', image_id=image.id) }}" alt="{{ image.original_filename }}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px; display: block;"></button>
+            {% else %}<span class="muted" style="color: #dc2626;">Chưa có</span>{% endfor %}
           </td>
           <td>{{ ticket.address or '' }}</td>
           <td>{{ ticket.phone or '' }}</td>
-          <td>{{ ticket.contract_type }}</td>
+          <td>{{ ticket.contract_type or '' }}</td>
           <td>{{ 'Có' if ticket.requires_reason_recheck else 'Không' }}</td>
-          <td class="updated">
-            {% if ticket.reason_updated_by %}
-              {{ ticket.reason_updated_by.email }}<br>{{ ticket.reason_updated_at.strftime('%d/%m/%Y %H:%M:%S') }}
-            {% else %}
-              <span class="muted">Chưa cập nhật</span>
-            {% endif %}
-          </td>
+          <td class="updated">{% if ticket.reason_updated_by %}{{ ticket.reason_updated_by.email }}<br>{{ ticket.reason_updated_at.strftime('%d/%m/%Y %H:%M:%S') }}{% else %}<span class="muted">Chưa cập nhật</span>{% endif %}</td>
           <td><span class="status waiting">{{ ticket.status }}</span></td>
         </tr>
         {% else %}
-        <tr><td colspan="15">Chưa có phiếu tồn trên 48 giờ.</td></tr>
+        <tr><td colspan="15">{{ empty_text }}</td></tr>
         {% endfor %}
-
       </tbody>
     </table>
   </div>
 </section>
+{% endmacro %}
+
+{{ ticket_table(tickets, 'over', 'Chi tiết phiếu tồn từ 48 giờ', 'Chưa có phiếu tồn từ 48 giờ trở lên.') }}
+{{ ticket_table(under_48h_tickets, 'under', 'Chi tiết phiếu tồn dưới 48 giờ', 'Chưa có phiếu tồn dưới 48 giờ.') }}
 
 {% if current_user.is_authenticated and current_user.is_admin %}
 <dialog class="reason-modal" id="check-again-modal">
@@ -439,7 +426,7 @@
 {% endif %}
 
 <!-- Modals & Viewer -->
-{% for ticket in tickets %}
+{% for ticket in tickets + under_48h_tickets %}
 <dialog class="reason-modal" id="reason-modal-{{ ticket.id }}">
   <div class="modal-card">
     <div class="modal-header">
@@ -520,7 +507,7 @@
   <h2>Chưa có dữ liệu</h2>
   <p>Upload file đầu vào để bắt đầu theo dõi.</p>
   {% if current_user.is_authenticated %}
-    <a class="button primary" href="{{ url_for('main.upload') }}">Upload dữ liệu</a>
+    <a class="button primary" href="{{ url_for('main.upload_new_template') }}">Upload dữ liệu</a>
   {% else %}
     <a class="button primary" href="{{ url_for('auth.login') }}">Đăng nhập để Upload</a>
   {% endif %}
@@ -763,12 +750,14 @@
       }
     });
 
-    // Cập nhật lại STT cho các dòng đang hiển thị
-    var stt = 1;
-    rows.forEach(function(tr) {
-      if (tr.style.display !== 'none' && tr.children.length > 1) {
-        tr.children[0].textContent = stt++;
-      }
+    // Đánh lại STT riêng trong từng bảng
+    document.querySelectorAll('.detail-table tbody').forEach(function(tbody) {
+      var stt = 1;
+      tbody.querySelectorAll('tr').forEach(function(tr) {
+        if (tr.style.display !== 'none' && tr.children.length > 1) {
+          tr.children[0].textContent = stt++;
+        }
+      });
     });
 
     var countElem = document.getElementById('detail-row-count');
@@ -776,177 +765,166 @@
   }
 
   // Sắp xếp theo đơn vị, thời gian tồn hoặc yêu cầu xác minh lại
-  function sortTable(column) {
-    if (currentSortColumn === column) {
+  function sortTable(column, preserveOrder) {
+    if (currentSortColumn === column && !preserveOrder) {
       currentSortOrder = (currentSortOrder === 'asc') ? 'desc' : 'asc';
-    } else {
+    } else if (currentSortColumn !== column) {
       currentSortColumn = column;
       currentSortOrder = 'asc';
     }
 
     // Cập nhật icon biểu tượng
-    var donviIcon = document.getElementById('sort-icon-donvi');
-    var thoigianIcon = document.getElementById('sort-icon-thoigian');
-    var recheckIcon = document.getElementById('sort-icon-recheck');
-    if (donviIcon) donviIcon.textContent = '↕';
-    if (thoigianIcon) thoigianIcon.textContent = '↕';
-    if (recheckIcon) recheckIcon.textContent = '↕';
-
-    var activeIcon = column === 'donvi' ? donviIcon :
-      (column === 'thoigian' ? thoigianIcon : recheckIcon);
-    if (activeIcon) {
-      activeIcon.textContent = (currentSortOrder === 'asc') ? '▲' : '▼';
-    }
-
-    var tbody = document.querySelector('.detail-table tbody');
-    if (!tbody) return;
-
-    var rows = Array.from(tbody.querySelectorAll('tr')).filter(function(r) {
-      return r.children.length > 1;
+    document.querySelectorAll('.sort-icon').forEach(function(icon) {
+      icon.textContent = '↕';
+    });
+    var iconClass = column === 'donvi' ? '.sort-icon-unit' :
+      (column === 'thoigian' ? '.sort-icon-age' : '.sort-icon-recheck');
+    document.querySelectorAll(iconClass).forEach(function(icon) {
+      icon.textContent = currentSortOrder === 'asc' ? '▲' : '▼';
     });
 
-    rows.sort(function(a, b) {
-      var valA, valB;
-
-      if (column === 'donvi') {
-        valA = (a.getAttribute('data-unit') || '').toLowerCase();
-        valB = (b.getAttribute('data-unit') || '').toLowerCase();
-        return currentSortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-      } else if (column === 'thoigian') {
-        valA = parseFloat(a.getAttribute('data-hours') || '0');
-        valB = parseFloat(b.getAttribute('data-hours') || '0');
-        return currentSortOrder === 'asc' ? valA - valB : valB - valA;
-      } else if (column === 'recheck') {
+    document.querySelectorAll('.detail-table tbody').forEach(function(tbody) {
+      var rows = Array.from(tbody.querySelectorAll('tr')).filter(function(row) {
+        return row.children.length > 1;
+      });
+      rows.sort(function(a, b) {
+        var valA, valB;
+        if (column === 'donvi') {
+          valA = (a.getAttribute('data-unit') || '').toLowerCase();
+          valB = (b.getAttribute('data-unit') || '').toLowerCase();
+          return currentSortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        }
+        if (column === 'thoigian') {
+          valA = parseFloat(a.getAttribute('data-hours') || '0');
+          valB = parseFloat(b.getAttribute('data-hours') || '0');
+          return currentSortOrder === 'asc' ? valA - valB : valB - valA;
+        }
         valA = a.getAttribute('data-recheck') === 'true' ? 1 : 0;
         valB = b.getAttribute('data-recheck') === 'true' ? 1 : 0;
         return currentSortOrder === 'asc' ? valA - valB : valB - valA;
-      }
-      return 0;
-    });
-
-    // Append lại DOM theo thứ tự đã sort
-    rows.forEach(function(row) {
-      tbody.appendChild(row);
+      });
+      rows.forEach(function(row) { tbody.appendChild(row); });
     });
 
     applyFilter();
   }
 
   // Gắn sự kiện click Sort và Filter
-  var thDonVi = document.getElementById('th-donvi');
-  if (thDonVi) {
-    thDonVi.addEventListener('click', function() { sortTable('donvi'); });
-  }
-
-  var thThoiGian = document.getElementById('th-thoigian');
-  if (thThoiGian) {
-    thThoiGian.addEventListener('click', function() { sortTable('thoigian'); });
-  }
-
-  var thRecheck = document.getElementById('th-recheck');
-  if (thRecheck) {
-    thRecheck.addEventListener('click', function() { sortTable('recheck'); });
-  }
+  document.querySelectorAll('.sort-unit').forEach(function(header) {
+    header.addEventListener('click', function() { sortTable('donvi'); });
+  });
+  document.querySelectorAll('.sort-age').forEach(function(header) {
+    header.addEventListener('click', function() { sortTable('thoigian'); });
+  });
+  document.querySelectorAll('.sort-recheck').forEach(function(header) {
+    header.addEventListener('click', function() { sortTable('recheck'); });
+  });
 
   var filterSelect = document.getElementById('filter-donvi');
   if (filterSelect) {
     filterSelect.addEventListener('change', applyFilter);
   }
 
-  // Tự động cập nhật bảng chi tiết ngầm định kỳ mỗi 5 giây
+  function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function(character) {
+      return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[character];
+    });
+  }
+
+  function renderTicketRows(tickets, emptyText) {
+    if (!tickets.length) return '<tr><td colspan="15">' + emptyText + '</td></tr>';
+    return tickets.map(function(ticket, index) {
+      var hasReason = ticket.reason && ticket.reason.trim() !== '';
+      var ageHours = Number(ticket.age_hours) || 0;
+      var isOver100 = ageHours >= 100;
+      var rowClass = hasReason ? 'row-verified' : (isOver100 ? 'row-warning-heavy' : 'row-warning-light');
+      if (ticket.requires_reason_recheck) rowClass += ' row-recheck';
+
+      var codeButton = isAdmin ?
+        '<button class="ticket-link" type="button" data-check-ticket="' + ticket.id + '" data-ticket-code="' + escapeHtml(ticket.subscriber_code) + '" data-ticket-name="' + escapeHtml(ticket.subscriber_name) + '" data-check-current="' + ticket.requires_reason_recheck + '">' + escapeHtml(ticket.subscriber_code) + '</button>' :
+        '<button class="ticket-link" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + escapeHtml(ticket.unit) + '">' + escapeHtml(ticket.subscriber_code) + '</button>';
+      var requestParts = (ticket.request_at || '').split(' ');
+      var requestDisplay = requestParts.length > 1 ?
+        escapeHtml(requestParts[0]) + '<br>' + escapeHtml(requestParts.slice(1).join(' ')) : escapeHtml(requestParts[0]);
+      var hoursDisplay = escapeHtml(ageHours.toFixed(1));
+      if (!hasReason && isOver100) {
+        hoursDisplay += '<span style="display: block; font-size: 10px; background: #e11d48; color: #fff; padding: 1px 4px; border-radius: 3px; font-weight: bold; margin-top: 2px;">>=100H CẦN XÁC MINH</span>';
+      }
+
+      var reasonText = escapeHtml(ticket.reason || 'Chưa xác minh');
+      if (ticket.reason_updated_by && ticket.reason_updated_at) {
+        reasonText += '<small class="reason-meta">(' + escapeHtml(ticket.reason_updated_by) + ' - ' + escapeHtml(ticket.reason_updated_at) + ')</small>';
+      }
+      var reasonStyle = hasReason ? 'color: #16a34a;' :
+        (isOver100 ? 'color: #9f1239; font-weight: 800;' : 'color: #dc2626; font-weight: 600;');
+      var imagesHtml = (ticket.images || []).map(function(image) {
+        var imageUrl = escapeHtml(image.url);
+        var imageName = escapeHtml(image.name);
+        return '<button class="thumbnail-button" type="button" data-image-url="' + imageUrl + '" data-image-name="' + imageName + '" title="' + imageName + '" style="background: none; border: 1px solid var(--line); border-radius: 4px; padding: 2px; cursor: pointer; display: inline-flex; margin-right: 4px; margin-bottom: 4px;"><img src="' + imageUrl + '" alt="' + imageName + '" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;"></button>';
+      }).join('') || '<span class="muted" style="color: #dc2626;">Chưa có</span>';
+      var updateInfo = ticket.reason_updated_by ?
+        escapeHtml(ticket.reason_updated_by) + '<br>' + escapeHtml(ticket.reason_updated_at || '') :
+        '<span class="muted">Chưa cập nhật</span>';
+
+      return '<tr class="' + rowClass + '" data-ticket-id="' + ticket.id + '" data-unit="' + escapeHtml(ticket.unit) + '" data-hours="' + ageHours + '" data-recheck="' + ticket.requires_reason_recheck + '">' +
+        '<td>' + (index + 1) + '</td><td>' + escapeHtml(ticket.unit) + '</td><td>' + escapeHtml(ticket.equipment_type) + '</td>' +
+        '<td>' + codeButton + '</td>' +
+        '<td><button class="ticket-link ticket-name" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + escapeHtml(ticket.unit) + '">' + escapeHtml(ticket.subscriber_name) + '</button></td>' +
+        '<td>' + requestDisplay + '</td><td class="hours">' + hoursDisplay + '</td>' +
+        '<td>' + (ticket.requires_reason_recheck ? 'X' : '') + '</td>' +
+        '<td class="reason-preview" style="' + reasonStyle + '">' + reasonText + '</td>' +
+        '<td class="thumbnail-cell">' + imagesHtml + '</td><td>' + escapeHtml(ticket.address) + '</td><td>' + escapeHtml(ticket.phone) + '</td>' +
+        '<td>' + escapeHtml(ticket.contract_type) + '</td><td>' + (ticket.requires_reason_recheck ? 'Có' : 'Không') + '</td>' +
+        '<td class="updated">' + updateInfo + '</td><td><span class="status waiting">' + escapeHtml(ticket.status) + '</span></td></tr>';
+    }).join('');
+  }
+
+  function sameTicketIds(tbody, tickets) {
+    var currentIds = Array.from(tbody.querySelectorAll('tr[data-ticket-id]')).map(function(row) {
+      return row.getAttribute('data-ticket-id');
+    }).sort();
+    var freshIds = tickets.map(function(ticket) { return String(ticket.id); }).sort();
+    return currentIds.join(',') === freshIds.join(',');
+  }
+
   function refreshTableData() {
     fetch('/api/table-data')
-    .then(response => response.json())
-    .then(data => {
-      if (!data.tickets) return;
-      
-      var tbody = document.querySelector('.detail-table tbody');
-      if (!tbody) return;
-      
-      var newHtml = '';
-      if (data.tickets.length === 0) {
-        newHtml = '<tr><td colspan="15">Chưa có phiếu tồn trên 48 giờ.</td></tr>';
-      } else {
-        data.tickets.forEach(function(ticket, index) {
-          var imagesHtml = '';
-          if (ticket.images && ticket.images.length > 0) {
-            ticket.images.forEach(function(img) {
-              imagesHtml += '<button class="thumbnail-button" type="button" data-image-url="' + img.url + '" data-image-name="' + img.name + '" style="background: none; border: 1px solid var(--line); border-radius: 4px; padding: 2px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin-right: 4px; margin-bottom: 4px;" title="' + img.name + '">';
-              imagesHtml += '<img src="' + img.url + '" alt="' + img.name + '" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px; display: block;">';
-              imagesHtml += '</button>';
-            });
-          } else {
-            imagesHtml = '<span class="muted" style="color: #dc2626;">Chưa có</span>';
-          }
-
-          var updateInfo = '<span class="muted">Chưa cập nhật</span>';
-          if (ticket.reason_updated_by) {
-            updateInfo = ticket.reason_updated_by + '<br>' + ticket.reason_updated_at;
-          }
-
-          var hasReason = ticket.reason && ticket.reason.trim() !== '';
-          var hoursNum = parseFloat(ticket.age_hours) || 0;
-          var isOver100 = hoursNum >= 100;
-
-          var rowClass = hasReason ? 'row-verified' : (isOver100 ? 'row-warning-heavy' : 'row-warning-light');
-          if (ticket.requires_reason_recheck) rowClass += ' row-recheck';
-          
-          var reasonStyle = 'color: #16a34a;';
-          if (!hasReason) {
-            reasonStyle = isOver100 ? 'color: #9f1239; font-weight: 800;' : 'color: #dc2626; font-weight: 600;';
-          }
-
-          var hoursDisplay = ticket.age_hours;
-          var requestAtParts = (ticket.request_at || '').split(' ');
-          var requestAtDisplay = requestAtParts.length > 1 ?
-            requestAtParts[0] + '<br>' + requestAtParts.slice(1).join(' ') :
-            (requestAtParts[0] || '');
-          if (!hasReason && isOver100) {
-            hoursDisplay += '<span style="display: block; font-size: 10px; background: #e11d48; color: #fff; padding: 1px 4px; border-radius: 3px; font-weight: bold; margin-top: 2px;">>=100H CẦN XÁC MINH</span>';
-          }
-
-          var reasonTextDisp = ticket.reason || 'Chưa xác minh';
-          if (ticket.reason_updated_by && ticket.reason_updated_at) {
-            reasonTextDisp += '<small class="reason-meta">(' + ticket.reason_updated_by + ' - ' + ticket.reason_updated_at + ')</small>';
-          }
-
-          newHtml += '<tr class="' + rowClass + '" data-unit="' + ticket.unit + '" data-hours="' + ticket.age_hours + '" data-recheck="' + ticket.requires_reason_recheck + '">' +
-            '<td>' + (index + 1) + '</td>' +
-            '<td>' + ticket.unit + '</td>' +
-            '<td>' + ticket.equipment_type + '</td>' +
-            '<td>' + (isAdmin ?
-              '<button class="ticket-link" type="button" data-check-ticket="' + ticket.id + '" data-ticket-code="' + ticket.subscriber_code + '" data-ticket-name="' + (ticket.subscriber_name || '') + '" data-check-current="' + ticket.requires_reason_recheck + '">' + ticket.subscriber_code + '</button>' :
-              '<button class="ticket-link" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + ticket.unit + '">' + ticket.subscriber_code + '</button>') + '</td>' +
-            '<td><button class="ticket-link ticket-name" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + ticket.unit + '">' + ticket.subscriber_name + '</button></td>' +
-            '<td>' + requestAtDisplay + '</td>' +
-            '<td class="hours">' + hoursDisplay + '</td>' +
-            '<td>' + (ticket.requires_reason_recheck ? 'X' : '') + '</td>' +
-            '<td class="reason-preview" style="' + reasonStyle + '">' + reasonTextDisp + '</td>' +
-            '<td class="thumbnail-cell">' + imagesHtml + '</td>' +
-            '<td>' + (ticket.address || '') + '</td>' +
-            '<td>' + (ticket.phone || '') + '</td>' +
-            '<td>' + ticket.contract_type + '</td>' +
-            '<td>' + (ticket.requires_reason_recheck ? 'Có' : 'Không') + '</td>' +
-            '<td class="updated">' + updateInfo + '</td>' +
-            '<td><span class="status waiting">' + ticket.status + '</span></td>' +
-          '</tr>';
-        });
-      }
-      
-      if (tbody.innerHTML.trim() !== newHtml.trim()) {
-        tbody.innerHTML = newHtml;
-        initUnitDropdown();
-        if (currentSortColumn) {
-          var col = currentSortColumn;
-          currentSortColumn = null; // reset đệm để duy trì trạng thái sort
-          sortTable(col);
-        } else {
-          applyFilter();
-        }
-        bindDynamicEvents();
-      }
+    .then(function(response) {
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      return response.json();
     })
-    .catch(err => console.log('Auto refresh error:', err));
+    .then(function(data) {
+      var groups = [
+        {name: 'over', tickets: data.over_48h_tickets || [], empty: 'Chưa có phiếu tồn từ 48 giờ trở lên.'},
+        {name: 'under', tickets: data.under_48h_tickets || [], empty: 'Chưa có phiếu tồn dưới 48 giờ.'}
+      ];
+      var changedGroup = groups.some(function(group) {
+        var tbody = document.querySelector('.detail-table tbody[data-ticket-group="' + group.name + '"]');
+        return tbody && !sameTicketIds(tbody, group.tickets);
+      });
+      if (changedGroup) {
+        window.location.reload();
+        return;
+      }
+
+      groups.forEach(function(group) {
+        var tbody = document.querySelector('.detail-table tbody[data-ticket-group="' + group.name + '"]');
+        if (!tbody) return;
+        tbody.innerHTML = renderTicketRows(group.tickets, group.empty);
+        var count = document.querySelector('[data-count-group="' + group.name + '"]');
+        if (count) count.textContent = group.tickets.length;
+      });
+      var overMetric = document.getElementById('metric-over-count');
+      var underMetric = document.getElementById('metric-under-count');
+      if (overMetric) overMetric.textContent = groups[0].tickets.length;
+      if (underMetric) underMetric.textContent = groups[1].tickets.length;
+
+      initUnitDropdown();
+      if (currentSortColumn) sortTable(currentSortColumn, true);
+      else applyFilter();
+      bindDynamicEvents();
+    })
+    .catch(function(error) { console.error('Auto refresh error:', error); });
   }
 
   // Khởi chạy khi load trang

@@ -74,7 +74,10 @@ class UploadBatch(db.Model):
 class Ticket(db.Model):
     __tablename__ = "tickets"
 
+    STATUS_PENDING = "CHƯA HOÀN CÔNG"
+    STATUS_COMPLETED = "ĐÃ HOÀN CÔNG"
     STATUS_WAITING = "ĐANG CHỜ XÁC MINH"
+    STATUS_UNDER_48H = "DƯỚI 48h"
     STATUS_NOT_LATEST = "KHÔNG CÓ TRONG DANH SÁCH MỚI NHẤT"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -83,14 +86,13 @@ class Ticket(db.Model):
     province = db.Column(db.String(30), nullable=False)
     unit = db.Column(db.String(150), nullable=False, index=True)
     contract_type = db.Column(db.String(100))
-    status = db.Column(db.String(100), nullable=False, default=STATUS_WAITING, index=True)
+    status = db.Column(db.String(100), nullable=False, default=STATUS_PENDING, index=True)
     equipment_type = db.Column(db.String(100))
     subscriber_code = db.Column(db.String(100), nullable=False, index=True)
     subscriber_name = db.Column(db.String(255))
     address = db.Column(db.String(500))
     phone = db.Column(db.String(30))
     request_at = db.Column(db.DateTime, nullable=False)
-    age_hours = db.Column(db.Numeric(10, 1), nullable=False, index=True)
     reason = db.Column(db.Text)
     requires_reason_recheck = db.Column(db.Boolean, nullable=False, default=False)
     reason_updated_by_id = db.Column(db.Integer, db.ForeignKey("users.id"))
@@ -102,6 +104,11 @@ class Ticket(db.Model):
     latest_batch = db.relationship("UploadBatch", foreign_keys=[latest_batch_id])
     reason_updated_by = db.relationship("User", foreign_keys=[reason_updated_by_id])
     images = db.relationship("TicketImage", back_populates="ticket", cascade="all, delete-orphan")
+
+    @property
+    def age_hours(self) -> float:
+        elapsed = (local_now() - self.request_at).total_seconds() / 3600
+        return round(max(elapsed, 0), 1)
 
 
 class TicketImage(db.Model):

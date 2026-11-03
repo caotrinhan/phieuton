@@ -1,8 +1,8 @@
-# Hệ thống giám sát phiếu tồn lắp đặt >48 giờ
+# Hệ thống theo dõi phiếu chưa hoàn công
 
 Tài liệu vận hành và phát triển chi tiết: [HUONG_DAN_VAN_HANH.md](HUONG_DAN_VAN_HANH.md)
 
-Ứng dụng Flask đọc hai file Excel Cà Mau/Bạc Liêu, lọc phiếu `THOIGIAN_TON > 48`, lưu vào MySQL database `phieuton`, theo dõi trạng thái xuyên các lần upload, nhập lý do và xuất Excel.
+Ứng dụng Flask đọc hai file Excel template mới Cà Mau/Bạc Liêu, lưu danh sách phiếu chưa hoàn công vào MySQL database `phieuton`, tính giờ tồn trực tiếp từ ngày yêu cầu, hiển thị hai nhóm phiếu từ 48 giờ trở lên/dưới 48 giờ, nhập lý do và xuất Excel.
 
 ## 1. Lưu ý port
 
@@ -127,17 +127,26 @@ Migration thêm bộ đếm upload, địa chỉ/số điện thoại, bảng h�
 
 Hình ảnh minh họa được lưu trong thư mục `uploads`; khi sao lưu phải sao lưu cả thư mục này cùng database.
 
+Khi cập nhật lên phiên bản tính giờ tồn động, chạy migration một lần:
+
+```powershell
+mysql -u root -p phieuton < migration_dynamic_age.sql
+```
+
+Migration cho phép cột `age_hours` cũ nhận `NULL`; hệ thống không còn ghi giá trị giờ tồn vào cột này mà tính trực tiếp từ `request_at`.
+
 ## 9. Trạng thái phiếu
 
-- `ĐANG CHỜ XÁC MINH`: mã còn trong danh sách mới nhất và hiển thị để nhập lý do.
-- `KHÔNG CÓ TRONG DANH SÁCH MỚI NHẤT`: mã từng tồn nhưng biến mất khỏi lần upload mới.
+- `CHƯA HOÀN CÔNG`: mã thuê bao có trong file upload gần nhất.
+- `ĐÃ HOÀN CÔNG`: mã thuê bao đã có trong database nhưng không còn trong file upload gần nhất.
+- Dashboard tính thời gian tồn động từ ngày yêu cầu; phiếu đúng 48 giờ được xếp vào bảng từ 48 giờ trở lên.
 
 ## 10. Quy trình hằng ngày
 
 1. Đăng nhập.
 2. Upload file Cà Mau và Bạc Liêu.
-3. Hệ thống lọc phiếu tồn trên 48 giờ.
-4. Dashboard hiển thị bảng Tổng hợp và Chi tiết.
+3. Hệ thống lưu các dòng có mã thuê bao và ngày yêu cầu hợp lệ; mã đã có được cập nhật, không tạo bản ghi trùng.
+4. Dashboard tính giờ tồn từ ngày yêu cầu và hiển thị hai bảng: từ 48 giờ trở lên và dưới 48 giờ.
 5. Người dùng nhập lý do và có thể đính kèm hình ảnh.
 6. Hệ thống lưu người cập nhật, thời gian cập nhật và lịch sử cũ/mới.
 7. Xuất Excel khi cần báo cáo.

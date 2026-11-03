@@ -9,7 +9,6 @@ from flask_login import current_user, login_required
 from sqlalchemy.exc import SQLAlchemyError
 from ..extensions import db
 from ..models import ReasonAudit, Ticket, TicketImage, UploadBatch, User, LoginLog, TrungTamMapping
-from ..services.import_service import load_filtered_tickets
 from ..time_utils import local_now
 
 
@@ -47,11 +46,35 @@ def _get_allowed_units() -> list:
     return allowed
 
 
-def load_new_filtered_tickets(ca_mau_path, bac_lieu_path):
+def _get_open_ticket_groups(now: datetime | None = None) -> tuple[list[Ticket], list[Ticket]]:
+    now = now or _now()
+    tickets = (
+        Ticket.query.filter(
+            Ticket.status.in_(
+                [
+                    Ticket.STATUS_PENDING,
+                    Ticket.STATUS_WAITING,
+                    Ticket.STATUS_UNDER_48H,
+                ]
+            )
+        )
+        .order_by(Ticket.unit, Ticket.request_at.asc())
+        .all()
+    )
+    over_48h = []
+    under_48h = []
+    threshold = timedelta(hours=48)
+    for ticket in tickets:
+        if now - ticket.request_at >= threshold:
+            over_48h.append(ticket)
+        else:
+            under_48h.append(ticket)
+    return over_48h, under_48h
+
+
+def load_new_tickets(ca_mau_path, bac_lieu_path):
     """
-    Đọc và gộp 2 file template mới của Cà Mau và Bạc Liêu,
-    lọc theo điều kiện: trangthai_hd == 'Chua hoan cong', tien_trinh == 'Đã giao thi công'
-    và chỉ lấy các phiếu có thời gian tồn > 48 giờ.
+    Đọc và gộp toàn bộ các dòng có mã thuê bao trong hai file template mới.
     """
     df_cm = pd.read_excel(ca_mau_path)
     df_bl = pd.read_excel(bac_lieu_path)
@@ -59,45 +82,42 @@ def load_new_filtered_tickets(ca_mau_path, bac_lieu_path):
     df_cm.columns = df_cm.columns.astype(str).str.strip().str.lower()
     df_bl.columns = df_bl.columns.astype(str).str.strip().str.lower()
 
-    df = pd.concat([df_cm, df_bl], ignore_index=True)
-    
-    df_filtered = df[
-        (df['trangthai_hd'].astype(str).str.strip().str.lower() == "chua hoan cong") & 
-        (df['tien_trinh'].astype(str).str.strip() == "Đã giao thi công")
-    ].copy()
-    
-    records = []
-    now = local_now()
-    
-    for _, row in df_filtered.iterrows():
-        request_at = pd.to_datetime(row.get('ngay_yeucau'), format='%d/%m/%Y %H:%M:%S', errors='coerce')
-        if pd.isna(request_at):
-            request_at = pd.to_datetime(row.get('ngay_yeucau'), errors='coerce')
-        if pd.isna(request_at):
-            request_at = now
-            
-        age_hours = round((now - request_at.tz_localize(None) if request_at.tzinfo else now - request_at).total_seconds() / 3600, 2)
-        if age_hours < 0:
-            age_hours = 0.0
+    required_columns = {"ma_tb", "ngay_yeucau"}
+    for frame, source in ((df_cm, "Cà Mau"), (df_bl, "Bạc Liêu")):
+        missing_columns = required_columns.difference(frame.columns)
+        if missing_columns:
+            missing = ", ".join(sorted(missing_columns))
+            raise ValueError(f"File {source} thiếu cột: {missing}")
 
-        # Chỉ lấy các phiếu có thời gian tồn trên 48 giờ (> 48h)
-        if age_hours <= 48:
+    df = pd.concat([df_cm, df_bl], ignore_index=True)
+    records = []
+
+    for row_number, (_, row) in enumerate(df.iterrows(), start=2):
+        subscriber_code = "" if pd.isna(row["ma_tb"]) else str(row["ma_tb"]).strip()
+        if not subscriber_code:
             continue
 
+        request_at = pd.to_datetime(row["ngay_yeucau"], format="%d/%m/%Y %H:%M:%S", errors="coerce")
+        if pd.isna(request_at):
+            request_at = pd.to_datetime(row["ngay_yeucau"], errors="coerce")
+        if pd.isna(request_at):
+            raise ValueError(f"Dòng {row_number}: ngày yêu cầu không hợp lệ.")
+        if request_at.tzinfo is not None:
+            request_at = request_at.tz_localize(None)
+
         record = {
-            "province": str(row.get('tentinh', '')).strip(),
-            "contract_type": str(row.get('loai_hopdong', '')).strip(),
-            "equipment_type": str(row.get('tenloai_tb', '')).strip(),
-            "subscriber_code": str(row.get('ma_tb', '')).strip(),
-            "subscriber_name": str(row.get('ten_kh', '')).strip(),
-            "request_at": request_at,
-            "age_hours": age_hours,
-            "address": str(row.get('diachi_lapdat', '')).strip(),
-            "phone": str(row.get('sodt_lh', '')).strip(),
-            "unit": str(row.get('donvi_lapdat', '')).strip(),
+            "province": "" if pd.isna(row.get("tentinh")) else str(row.get("tentinh")).strip(),
+            "contract_type": "" if pd.isna(row.get("loai_hopdong")) else str(row.get("loai_hopdong")).strip(),
+            "equipment_type": "" if pd.isna(row.get("tenloai_tb")) else str(row.get("tenloai_tb")).strip(),
+            "subscriber_code": subscriber_code,
+            "subscriber_name": "" if pd.isna(row.get("ten_kh")) else str(row.get("ten_kh")).strip(),
+            "request_at": request_at.to_pydatetime(),
+            "address": "" if pd.isna(row.get("diachi_lapdat")) else str(row.get("diachi_lapdat")).strip(),
+            "phone": "" if pd.isna(row.get("sodt_lh")) else str(row.get("sodt_lh")).strip(),
+            "unit": "" if pd.isna(row.get("donvi_lapdat")) else str(row.get("donvi_lapdat")).strip(),
         }
         records.append(record)
-        
+
     return records, len(df)
 
 
@@ -165,14 +185,7 @@ def ping_online():
 @main_bp.get("/")
 def dashboard():
     batch = UploadBatch.query.order_by(UploadBatch.uploaded_at.desc()).first()
-    
-    ticket_query = Ticket.query.filter_by(status=Ticket.STATUS_WAITING)
-    tickets = (
-        ticket_query.order_by(Ticket.unit, Ticket.age_hours.desc())
-        .all()
-        if batch
-        else []
-    )
+    tickets, under_48h_tickets = _get_open_ticket_groups()
     
     units = {}
     for ticket in tickets:
@@ -213,6 +226,7 @@ def dashboard():
         "dashboard.html", 
         batch=batch, 
         tickets=tickets, 
+        under_48h_tickets=under_48h_tickets,
         units=units, 
         summary_rows=summary_rows, 
         summary_total=summary_total,
@@ -276,105 +290,16 @@ def ticket_detail(ticket_id: int):
     return render_template("ticket_detail.html", ticket=ticket)
 
 
-@main_bp.route("/upload", methods=["GET", "POST"])
-@login_required
-def upload():
-    if not current_user.is_admin:
-        flash("Bạn không có quyền thực hiện chức năng upload file.", "error")
-        return redirect(url_for("main.dashboard"))
-    if request.method == "POST":
-        ca_mau_file = request.files.get("ca_mau")
-        bac_lieu_file = request.files.get("bac_lieu")
-        if not ca_mau_file or not bac_lieu_file or not ca_mau_file.filename or not bac_lieu_file.filename:
-            flash("Vui lòng chọn đủ hai file Excel.", "error")
-            return redirect(url_for("main.upload"))
-        if not _allowed(ca_mau_file.filename) or not _allowed(bac_lieu_file.filename):
-            flash("Chỉ chấp nhận file .xlsx hoặc .xls.", "error")
-            return redirect(url_for("main.upload"))
-
-        upload_dir: Path = Path(current_app.config["UPLOAD_DIR"])
-        upload_dir.mkdir(parents=True, exist_ok=True)
-        
-        ca_path = upload_dir / f"{uuid4().hex}_{ca_mau_file.filename}"
-        bl_path = upload_dir / f"{uuid4().hex}_{bac_lieu_file.filename}"
-        ca_mau_file.save(ca_path)
-        bac_lieu_file.save(bl_path)
-        try:
-            records, total = load_filtered_tickets(ca_path, bl_path)
-            now = _now()
-            current_codes = {record["subscriber_code"] for record in records}
-            waiting_tickets = Ticket.query.filter_by(status=Ticket.STATUS_WAITING).all()
-            status_changed_count = 0
-            for ticket in waiting_tickets:
-                if ticket.subscriber_code not in current_codes:
-                    ticket.status = Ticket.STATUS_NOT_LATEST
-                    ticket.status_changed_at = now
-                    status_changed_count += 1
-
-            existing_tickets = {
-                ticket.subscriber_code: ticket
-                for ticket in Ticket.query.filter(Ticket.subscriber_code.in_(current_codes)).all()
-            }
-            new_count = sum(record["subscriber_code"] not in existing_tickets for record in records)
-            existing_count = len(records) - new_count
-            batch = UploadBatch(
-                uploaded_at=now,
-                uploaded_by_id=current_user.id,
-                ca_mau_filename=ca_mau_file.filename,
-                bac_lieu_filename=bac_lieu_file.filename,
-                total_tickets=total,
-                over_48h_tickets=len(records),
-                new_tickets=new_count,
-                status_changed_tickets=status_changed_count,
-                existing_tickets=existing_count,
-            )
-            db.session.add(batch)
-            db.session.flush()
-            for record in records:
-                ticket = existing_tickets.get(record["subscriber_code"])
-                if ticket is None:
-                    record["status"] = Ticket.STATUS_WAITING
-                    ticket = Ticket(
-                        batch_id=batch.id,
-                        latest_batch_id=batch.id,
-                        last_seen_at=now,
-                        status_changed_at=now,
-                        **record,
-                    )
-                    db.session.add(ticket)
-                    continue
-
-                ticket.latest_batch_id = batch.id
-                ticket.last_seen_at = now
-                if ticket.status != Ticket.STATUS_WAITING:
-                    ticket.status = Ticket.STATUS_WAITING
-                    ticket.status_changed_at = now
-                for field, value in record.items():
-                    if field != "status":
-                        setattr(ticket, field, value)
-            db.session.commit()
-            flash(
-                f"Upload thành công: thêm mới {new_count} phiếu; chuyển trạng thái khác {status_changed_count} phiếu; "
-                f"đã tồn tại {existing_count} phiếu.",
-                "success",
-            )
-            return redirect(url_for("main.dashboard"))
-        except Exception as error:
-            db.session.rollback()
-            flash(f"Không thể xử lý file: {error}", "error")
-        finally:
-            ca_path.unlink(missing_ok=True)
-            bl_path.unlink(missing_ok=True)
-    return render_template("upload.html")
-
-
-@main_bp.post("/upload-new")
+@main_bp.route("/upload-new", methods=["GET", "POST"])
 @login_required
 def upload_new_template():
     if not current_user.is_admin:
         flash("Bạn không có quyền thực hiện chức năng upload file.", "error")
         return redirect(url_for("main.dashboard"))
-        
+
+    if request.method == "GET":
+        return render_template("upload.html")
+
     ca_mau_file = request.files.get("ca_mau_moi")
     bac_lieu_file = request.files.get("bac_lieu_moi")
     
@@ -395,107 +320,87 @@ def upload_new_template():
     bac_lieu_file.save(bl_path)
     
     try:
-        records, total = load_new_filtered_tickets(ca_path, bl_path)
+        records, total = load_new_tickets(ca_path, bl_path)
         now = _now()
-        
-        # Chuẩn hóa tập hợp các mã thuê bao hiện có trong file để đối chiếu
-        current_codes = {str(record["subscriber_code"]).strip().lower() for record in records if record.get("subscriber_code")}
-        
-        waiting_tickets = Ticket.query.filter_by(status=Ticket.STATUS_WAITING).all()
-        status_changed_count = 0
-        
-        for ticket in waiting_tickets:
-            if ticket.subscriber_code:
-                t_code = str(ticket.subscriber_code).strip().lower()
-                if t_code not in current_codes:
-                    ticket.status = Ticket.STATUS_NOT_LATEST
-                    ticket.status_changed_at = now
-                    status_changed_count += 1
-
-        # Lấy toàn bộ ticket từ DB và chuẩn hóa key dạng chữ thường, bỏ khoảng trắng
-        db_tickets = Ticket.query.all()
+        current_codes = {record["subscriber_code"].strip().lower() for record in records}
         existing_tickets = {}
-        for t in db_tickets:
-            if t.subscriber_code:
-                key = str(t.subscriber_code).strip().lower()
-                # Ưu tiên giữ bản ghi có id lớn nhất nếu lỡ có dữ liệu trùng lặp cũ
-                if key not in existing_tickets or t.id > existing_tickets[key].id:
-                    existing_tickets[key] = t
-        
-        new_count = 0
-        existing_count = 0
-        
+        for ticket in Ticket.query.order_by(Ticket.id.desc()).all():
+            code_key = (ticket.subscriber_code or "").strip().lower()
+            if code_key and code_key not in existing_tickets:
+                existing_tickets[code_key] = ticket
+
         batch = UploadBatch(
             uploaded_at=now,
             uploaded_by_id=current_user.id,
             ca_mau_filename=ca_mau_file.filename,
             bac_lieu_filename=bac_lieu_file.filename,
             total_tickets=total,
-            over_48h_tickets=len(records),
-            new_tickets=0,  # Sẽ cập nhật lại sau vòng lặp
-            status_changed_tickets=status_changed_count,
-            existing_tickets=0, # Sẽ cập nhật lại sau vòng lặp
+            over_48h_tickets=sum(
+                now - record["request_at"] >= timedelta(hours=48)
+                for record in records
+            ),
+            new_tickets=0,
+            status_changed_tickets=0,
+            existing_tickets=0,
         )
         db.session.add(batch)
         db.session.flush()
-        
+
+        existing_db_codes = set(existing_tickets)
+        new_codes = set()
+        existing_codes = set()
         for record in records:
-            raw_code = record.get("subscriber_code")
-            if not raw_code:
-                continue
-            
-            sub_code_key = str(raw_code).strip().lower()
-            ticket = existing_tickets.get(sub_code_key)
-            
+            code_key = record["subscriber_code"].strip().lower()
+            ticket = existing_tickets.get(code_key)
+            if code_key in existing_db_codes:
+                existing_codes.add(code_key)
+            else:
+                new_codes.add(code_key)
             if ticket is None:
-                # Nếu chưa có trong DB -> Tạo mới và gán status là DANG_CHO_XAC_MINH (STATUS_WAITING)
-                new_count += 1
-                record["status"] = Ticket.STATUS_WAITING
                 ticket = Ticket(
                     batch_id=batch.id,
                     latest_batch_id=batch.id,
+                    status=Ticket.STATUS_PENDING,
                     last_seen_at=now,
                     status_changed_at=now,
                     **record,
                 )
                 db.session.add(ticket)
-                # Đưa ngay vào từ điển để tránh trường hợp file excel chứa mã trùng lặp trong cùng một lần upload
-                existing_tickets[sub_code_key] = ticket
+                existing_tickets[code_key] = ticket
             else:
-                # Nếu đã tồn tại trong DB -> Thực hiện cập nhật (UPDATE) thay vì chèn mới (INSERT)
-                existing_count += 1
                 ticket.latest_batch_id = batch.id
                 ticket.last_seen_at = now
-                
-                # Nếu status đang không phải 'ĐANG CHỜ XAC MINH' thì chuyển về chờ xác minh
-                if ticket.status != Ticket.STATUS_WAITING:
-                    ticket.status = Ticket.STATUS_WAITING
+                if ticket.status != Ticket.STATUS_PENDING:
                     ticket.status_changed_at = now
-                    
+                ticket.status = Ticket.STATUS_PENDING
                 for field, value in record.items():
-                    if field != "status":
-                        setattr(ticket, field, value)
-                        
-        # Cập nhật lại số lượng chính xác vào batch
-        batch.new_tickets = new_count
-        batch.existing_tickets = existing_count
-        
+                    setattr(ticket, field, value)
+
+        status_changed_count = 0
+        for ticket in Ticket.query.all():
+            code_key = (ticket.subscriber_code or "").strip().lower()
+            if code_key not in current_codes and ticket.status != Ticket.STATUS_COMPLETED:
+                ticket.status = Ticket.STATUS_COMPLETED
+                ticket.status_changed_at = now
+                status_changed_count += 1
+
+        batch.new_tickets = len(new_codes)
+        batch.existing_tickets = len(existing_codes)
+        batch.status_changed_tickets = status_changed_count
+
         db.session.commit()
         flash(
-            f"Upload Template Mới thành công: thêm mới {new_count} phiếu; chuyển trạng thái khác {status_changed_count} phiếu; "
-            f"đã tồn tại {existing_count} phiếu.",
+            f"Upload thành công: thêm mới {len(new_codes)} phiếu; cập nhật {len(existing_codes)} phiếu; "
+            f"đã chuyển {status_changed_count} phiếu không còn trong file thành đã hoàn công.",
             "success",
         )
         return redirect(url_for("main.dashboard"))
 
     except Exception as error:
         db.session.rollback()
-        # In lỗi chi tiết ra terminal/console của Python
-        import traceback
-        traceback.print_exc()
-
+        current_app.logger.exception("Không thể xử lý file template mới.")
         flash(f"Không thể xử lý file template mới: {error}", "error")
-        return redirect(url_for("main.dashboard"))
+        return redirect(url_for("main.upload_new_template"))
     finally:
         ca_path.unlink(missing_ok=True)
         bl_path.unlink(missing_ok=True)
@@ -593,31 +498,40 @@ def export_xlsx():
     if not batch:
         flash("Chưa có dữ liệu để xuất.", "error")
         return redirect(url_for("main.dashboard"))
-        
-    ticket_query = Ticket.query.filter_by(status=Ticket.STATUS_WAITING)
-    tickets = ticket_query.order_by(Ticket.unit, Ticket.age_hours.desc()).all()
-    
-    detail = pd.DataFrame([
-        {
-            "STT": index,
-            "Đơn vị": ticket.unit,
-            "Tỉnh": ticket.province,
-            "Loại HĐ": ticket.contract_type,
-            "Loại TB": ticket.equipment_type,
-            "Mã thuê bao": ticket.subscriber_code,
-            "Tên thuê bao": ticket.subscriber_name,
-            "NGAY LAPPHIEU": ticket.request_at.strftime("%d/%m/%Y %H:%M:%S"),
-            "THOIGIAN_TON (h)": float(ticket.age_hours),
-            "Diachi Ld": ticket.address or "",
-            "So Dt": ticket.phone or "",
-            "Yêu cầu check lại lý do tồn": ticket.requires_reason_recheck,
-            "Trạng thái": ticket.status,
-            "TTVT báo lý do tồn": ticket.reason or "",
-            "Người cập nhật": ticket.reason_updated_by.full_name if ticket.reason_updated_by else "",
-            "Thời gian cập nhật": ticket.reason_updated_at.strftime("%d/%m/%Y %H:%M:%S") if ticket.reason_updated_at else "",
-        }
-        for index, ticket in enumerate(tickets, 1)
-    ])
+
+    over_48h_tickets, under_48h_tickets = _get_open_ticket_groups()
+
+    def ticket_rows(tickets: list[Ticket]) -> list[dict]:
+        return [
+            {
+                "STT": index,
+                "Đơn vị": ticket.unit,
+                "Tỉnh": ticket.province,
+                "Loại HĐ": ticket.contract_type,
+                "Loại TB": ticket.equipment_type,
+                "Mã thuê bao": ticket.subscriber_code,
+                "Tên thuê bao": ticket.subscriber_name,
+                "NGAY LAPPHIEU": ticket.request_at.strftime("%d/%m/%Y %H:%M:%S"),
+                "THOIGIAN_TON (h)": float(ticket.age_hours),
+                "Diachi Ld": ticket.address or "",
+                "So Dt": ticket.phone or "",
+                "Yêu cầu check lại lý do tồn": ticket.requires_reason_recheck,
+                "Trạng thái": ticket.status,
+                "TTVT báo lý do tồn": ticket.reason or "",
+                "Người cập nhật": ticket.reason_updated_by.full_name if ticket.reason_updated_by else "",
+                "Thời gian cập nhật": ticket.reason_updated_at.strftime("%d/%m/%Y %H:%M:%S") if ticket.reason_updated_at else "",
+            }
+            for index, ticket in enumerate(tickets, 1)
+        ]
+
+    detail_columns = [
+        "STT", "Đơn vị", "Tỉnh", "Loại HĐ", "Loại TB", "Mã thuê bao", "Tên thuê bao",
+        "NGAY LAPPHIEU", "THOIGIAN_TON (h)", "Diachi Ld", "So Dt",
+        "Yêu cầu check lại lý do tồn", "Trạng thái", "TTVT báo lý do tồn",
+        "Người cập nhật", "Thời gian cập nhật",
+    ]
+    detail = pd.DataFrame(ticket_rows(over_48h_tickets), columns=detail_columns)
+    under_48h_detail = pd.DataFrame(ticket_rows(under_48h_tickets), columns=detail_columns)
     summary = detail.groupby("Đơn vị", dropna=False).agg(
         total=("Mã thuê bao", "count"),
         requires_reason_recheck=("Yêu cầu check lại lý do tồn", "sum"),
@@ -646,6 +560,7 @@ def export_xlsx():
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         summary.to_excel(writer, sheet_name="Tổng hợp", index=False)
         detail.to_excel(writer, sheet_name="Tồn trên 48h", index=False)
+        under_48h_detail.to_excel(writer, sheet_name="Tồn dưới 48h", index=False)
     output.seek(0)
     return send_file(output, as_attachment=True, download_name=f"bao_cao_ton_{_now():%Y%m%d_%H%M%S}.xlsx")
 
@@ -690,33 +605,44 @@ def login_logs():
 
 @main_bp.get("/api/table-data")
 def get_table_data():
-    batch = UploadBatch.query.order_by(UploadBatch.uploaded_at.desc()).first()
-    if not batch:
-        return {"tickets": [], "summary_rows": [], "summary_total": {}}
-    
-    ticket_query = Ticket.query.filter_by(status=Ticket.STATUS_WAITING)
-    tickets = ticket_query.order_by(Ticket.unit, Ticket.age_hours.desc()).all()
-    
-    tickets_data = []
-    for index, ticket in enumerate(tickets, 1):
-        tickets_data.append({
-            "id": ticket.id,
-            "stt": index,
-            "unit": ticket.unit,
-            "equipment_type": ticket.equipment_type,
-            "subscriber_code": ticket.subscriber_code,
-            "subscriber_name": ticket.subscriber_name,
-            "request_at": ticket.request_at.strftime('%d/%m/%Y %H:%M:%S') if ticket.request_at else "",
-            "age_hours": ticket.age_hours,
-            "requires_reason_recheck": ticket.requires_reason_recheck,
-            "reason": ticket.reason or "",
-            "address": ticket.address or "",
-            "phone": ticket.phone or "",
-            "contract_type": ticket.contract_type,
-            "status": ticket.status,
-            "reason_updated_by": ticket.reason_updated_by.email if ticket.reason_updated_by else None,
-            "reason_updated_at": ticket.reason_updated_at.strftime('%d/%m/%Y %H:%M:%S') if ticket.reason_updated_at else None,
-            "images": [{"id": img.id, "url": url_for('main.ticket_image', image_id=img.id), "name": img.original_filename} for img in ticket.images]
-        })
-        
-    return {"tickets": tickets_data}
+    over_48h_tickets, under_48h_tickets = _get_open_ticket_groups()
+
+    def serialize_tickets(tickets: list[Ticket]) -> list[dict]:
+        return [
+            {
+                "id": ticket.id,
+                "stt": index,
+                "unit": ticket.unit,
+                "equipment_type": ticket.equipment_type,
+                "subscriber_code": ticket.subscriber_code,
+                "subscriber_name": ticket.subscriber_name,
+                "request_at": ticket.request_at.strftime("%d/%m/%Y %H:%M:%S"),
+                "age_hours": ticket.age_hours,
+                "requires_reason_recheck": ticket.requires_reason_recheck,
+                "reason": ticket.reason or "",
+                "address": ticket.address or "",
+                "phone": ticket.phone or "",
+                "contract_type": ticket.contract_type or "",
+                "status": ticket.status,
+                "reason_updated_by": ticket.reason_updated_by.email if ticket.reason_updated_by else None,
+                "reason_updated_at": (
+                    ticket.reason_updated_at.strftime("%d/%m/%Y %H:%M:%S")
+                    if ticket.reason_updated_at
+                    else None
+                ),
+                "images": [
+                    {
+                        "id": image.id,
+                        "url": url_for("main.ticket_image", image_id=image.id),
+                        "name": image.original_filename,
+                    }
+                    for image in ticket.images
+                ],
+            }
+            for index, ticket in enumerate(tickets, 1)
+        ]
+
+    return {
+        "over_48h_tickets": serialize_tickets(over_48h_tickets),
+        "under_48h_tickets": serialize_tickets(under_48h_tickets),
+    }
