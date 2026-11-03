@@ -211,6 +211,153 @@
     color:blue;
     font-weight: bold;
   }
+  .ticket-chart-panel {
+    margin: 20px auto;
+    padding: 18px 20px 14px;
+    overflow: hidden;
+  }
+  .ticket-chart-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+  .ticket-chart-heading h2 {
+    margin: 0;
+    color: #30343b;
+    font: 700 22px/1.25 'Roboto', Arial, sans-serif;
+  }
+  .ticket-chart-heading p {
+    margin: 4px 0 0;
+    color: #64748b;
+    font: 12px/1.4 'Roboto', Arial, sans-serif;
+  }
+  .ticket-chart-summary {
+    flex: 0 0 auto;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    font: 600 12px 'Roboto', Arial, sans-serif;
+  }
+  .ticket-chart-legend {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin: 0 0 14px;
+    color: #4b5563;
+    font: 600 13px 'Roboto', Arial, sans-serif;
+  }
+  .ticket-chart-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .ticket-chart-legend-swatch {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+  .ticket-chart-scroll {
+    max-height: 680px;
+    overflow: auto;
+  }
+  .ticket-chart-content {
+    min-width: 800px;
+  }
+  .ticket-chart-axis,
+  .ticket-chart-row {
+    display: grid;
+    grid-template-columns: minmax(210px, 260px) minmax(0, 1fr);
+    column-gap: 12px;
+  }
+  .ticket-chart-axis {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 4px 0 7px;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .ticket-chart-axis-track {
+    position: relative;
+    height: 20px;
+    margin-right: 42px;
+    color: #64748b;
+    font: 12px 'Roboto', Arial, sans-serif;
+  }
+  .ticket-chart-tick {
+    position: absolute;
+    top: 2px;
+    transform: translateX(-50%);
+  }
+  .ticket-chart-tick:first-child {
+    transform: none;
+  }
+  .ticket-chart-row {
+    min-height: 38px;
+    align-items: center;
+  }
+  .ticket-chart-unit {
+    overflow: hidden;
+    color: #525a65;
+    font: 600 12px 'Roboto', Arial, sans-serif;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ticket-chart-track {
+    position: relative;
+    height: 24px;
+    margin-right: 42px;
+    background-image: linear-gradient(to right, #d9dee5 1px, transparent 1px);
+    background-repeat: repeat-x;
+  }
+  .ticket-chart-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    height: 100%;
+    overflow: hidden;
+  }
+  .ticket-chart-segment {
+    display: flex;
+    min-width: 0;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    color: #fff;
+    font: 10px 'Roboto', Arial, sans-serif;
+    white-space: nowrap;
+  }
+  .ticket-chart-total {
+    position: absolute;
+    top: 50%;
+    color: #50545a;
+    font: 16px 'Roboto', Arial, sans-serif;
+    transform: translate(7px, -50%);
+  }
+  .ticket-chart-empty {
+    padding: 36px 12px;
+    color: #64748b;
+    text-align: center;
+    font: 14px 'Roboto', Arial, sans-serif;
+  }
+  @media (max-width: 600px) {
+    .ticket-chart-panel {
+      padding: 14px 12px 10px;
+    }
+    .ticket-chart-heading h2 {
+      font-size: 19px;
+    }
+    .ticket-chart-summary {
+      font-size: 11px;
+    }
+  }
 </style>
 
 <!-- Thanh trạng thái người đang xem -->
@@ -340,16 +487,32 @@
 <section class="panel upload-result" style="padding: 10px 18px; font-size: 13px; margin-bottom: 16px;">
   <span><strong>Kết quả upload gần nhất:</strong> Phát sinh mới <span style="color: #d97706; font-weight: 700;">{{ batch.new_tickets }}</span> phiếu · Đã xử lý <span style="color: #16a34a; font-weight: 700;">{{ batch.status_changed_tickets }}</span> phiếu · Phiếu cũ <span style="color: #64748b; font-weight: 700;">{{ batch.existing_tickets }}</span> phiếu.</span>
 </section>
-<div style="width: 100%; max-width: 100%; background: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin: 20px auto; overflow: hidden; border: 1px solid #e5e7eb;">
-    <div style="position: relative; width: 100%; height: 750px; overflow: hidden;">
-        <iframe title="nhut" src="https://app.powerbi.com/view?r=eyJrIjoiZjMxNjYwMmUtYmQ2OC00OWE0LThiZjYtYzVjZDkxOTJhOTY3IiwidCI6ImE0OWExODJkLWNmYTItNDkyYy05YzViLTQwYzQyYzU1NzFiMyIsImMiOjEwfQ%3D%3D&pageName=66308580905b05eec09b" width="100%" height="850px" frameborder="0" allowFullScreen="true" style="border: none; position: absolute; top: -30px; left: 0;"></iframe>
+<section class="panel ticket-chart-panel" aria-labelledby="over-48h-chart-title">
+  <div class="ticket-chart-heading">
+    <div>
+      <h2 id="over-48h-chart-title">Phiếu tồn ≥48h</h2>
+      <p>Số phiếu theo tổ kỹ thuật và thời gian tồn</p>
     </div>
-</div>
-<div style="width: 100%; max-width: 100%; background: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin: 20px auto; overflow: hidden; border: 1px solid #e5e7eb;">
-    <div style="position: relative; width: 100%; height: 750px; overflow: hidden;">
-        <iframe title="nhut" src="https://app.powerbi.com/view?r=eyJrIjoiZjMxNjYwMmUtYmQ2OC00OWE0LThiZjYtYzVjZDkxOTJhOTY3IiwidCI6ImE0OWExODJkLWNmYTItNDkyYy05YzViLTQwYzQyYzU1NzFiMyIsImMiOjEwfQ%3D%3D&pageName=0686a9f0ca7b909a7464" width="100%" height="850px" frameborder="0" allowFullScreen="true" style="border: none; position: absolute; top: -30px; left: 0;"></iframe>
+    <span class="ticket-chart-summary" id="over-48h-chart-summary"></span>
+  </div>
+  <div class="ticket-chart-legend" id="over-48h-chart-legend"></div>
+  <div class="ticket-chart-scroll">
+    <div class="ticket-chart-content" id="over-48h-chart" role="img" aria-label="Biểu đồ phiếu tồn từ 48 giờ trở lên"></div>
+  </div>
+</section>
+<section class="panel ticket-chart-panel" aria-labelledby="under-48h-chart-title">
+  <div class="ticket-chart-heading">
+    <div>
+      <h2 id="under-48h-chart-title">Phiếu tồn &lt;48h</h2>
+      <p>Số phiếu theo tổ kỹ thuật và loại thiết bị</p>
     </div>
-</div>
+    <span class="ticket-chart-summary" id="under-48h-chart-summary"></span>
+  </div>
+  <div class="ticket-chart-legend" id="under-48h-chart-legend"></div>
+  <div class="ticket-chart-scroll">
+    <div class="ticket-chart-content" id="under-48h-chart" role="img" aria-label="Biểu đồ phiếu tồn dưới 48 giờ"></div>
+  </div>
+</section>
 <!-- Bảng Tổng hợp -->
 <section class="panel summary-panel" style="margin-bottom: 20px;">
   <div class="panel-title" style="padding: 14px 18px; border-bottom: 1px solid rgba(226, 232, 240, 0.8);">
@@ -660,6 +823,110 @@
   var isAuthenticated = {{ 'true' if current_user.is_authenticated else 'false' }};
   var isAdmin = {{ 'true' if current_user.is_admin else 'false' }};
   var allowedUnits = {{ allowed_units | tojson }};
+  var ticketCharts = {{ ticket_charts | tojson }};
+
+  function renderTicketChart(chart, chartId, legendId, summaryId) {
+    var chartElement = document.getElementById(chartId);
+    var legendElement = document.getElementById(legendId);
+    var summaryElement = document.getElementById(summaryId);
+    if (!chartElement || !legendElement || !summaryElement) return;
+
+    var palette = ['#1688f8', '#1926a1', '#ea6736', '#8b159b', '#e448a4', '#7855cf', '#ddb600', '#14a89a', '#64748b'];
+    var categories = chart.categories || [];
+    var rows = chart.rows || [];
+    var colors = categories.map(function(_, index) { return palette[index % palette.length]; });
+    var ticketTotal = rows.reduce(function(total, row) { return total + row.total; }, 0);
+    summaryElement.textContent = ticketTotal.toLocaleString('vi-VN') + ' phiếu · ' + rows.length + ' tổ';
+    legendElement.textContent = '';
+    chartElement.textContent = '';
+
+    categories.forEach(function(category, index) {
+      var item = document.createElement('span');
+      item.className = 'ticket-chart-legend-item';
+      var swatch = document.createElement('span');
+      swatch.className = 'ticket-chart-legend-swatch';
+      swatch.style.backgroundColor = colors[index];
+      var label = document.createElement('span');
+      label.textContent = category;
+      item.appendChild(swatch);
+      item.appendChild(label);
+      legendElement.appendChild(item);
+    });
+
+    if (!rows.length) {
+      var emptyMessage = document.createElement('div');
+      emptyMessage.className = 'ticket-chart-empty';
+      emptyMessage.textContent = 'Chưa có dữ liệu phiếu tồn.';
+      chartElement.appendChild(emptyMessage);
+      return;
+    }
+
+    var largestTotal = Math.max.apply(null, rows.map(function(row) { return row.total; }));
+    var roughStep = largestTotal / 7;
+    var power = Math.pow(10, Math.floor(Math.log10(roughStep)));
+    var normalizedStep = roughStep / power;
+    var step = (normalizedStep <= 1 ? 1 : normalizedStep <= 2 ? 2 : normalizedStep <= 5 ? 5 : 10) * power;
+    var axisMaximum = Math.ceil(largestTotal / step) * step;
+    var tickCount = Math.floor(axisMaximum / step) + 1;
+    var axis = document.createElement('div');
+    axis.className = 'ticket-chart-axis';
+    axis.setAttribute('aria-hidden', 'true');
+    var axisSpacer = document.createElement('span');
+    var axisTrack = document.createElement('div');
+    axisTrack.className = 'ticket-chart-axis-track';
+    for (var tickIndex = 0; tickIndex < tickCount; tickIndex++) {
+      var tick = document.createElement('span');
+      tick.className = 'ticket-chart-tick';
+      tick.style.left = (tickIndex / (tickCount - 1) * 100) + '%';
+      tick.textContent = (tickIndex * step).toLocaleString('vi-VN');
+      axisTrack.appendChild(tick);
+    }
+    axis.appendChild(axisSpacer);
+    axis.appendChild(axisTrack);
+    chartElement.appendChild(axis);
+
+    var rowContainer = document.createElement('div');
+    rows.forEach(function(row) {
+      var chartRow = document.createElement('div');
+      chartRow.className = 'ticket-chart-row';
+      chartRow.setAttribute('aria-label', row.unit + ': ' + row.total + ' phiếu');
+      var unit = document.createElement('span');
+      unit.className = 'ticket-chart-unit';
+      unit.title = row.unit;
+      unit.textContent = row.unit;
+      var track = document.createElement('div');
+      track.className = 'ticket-chart-track';
+      track.style.backgroundSize = (100 / (tickCount - 1)) + '% 100%';
+      var bar = document.createElement('div');
+      bar.className = 'ticket-chart-bar';
+      bar.style.width = (row.total / axisMaximum * 100) + '%';
+      row.values.forEach(function(value, index) {
+        if (!value) return;
+        var segment = document.createElement('span');
+        segment.className = 'ticket-chart-segment';
+        segment.style.flexBasis = (value / row.total * 100) + '%';
+        segment.style.backgroundColor = colors[index];
+        segment.title = categories[index] + ': ' + value;
+        if (value / axisMaximum * (chartElement.clientWidth - 315) >= 20) {
+          segment.textContent = value;
+        }
+        bar.appendChild(segment);
+      });
+      var total = document.createElement('span');
+      total.className = 'ticket-chart-total';
+      total.style.left = (row.total / axisMaximum * 100) + '%';
+      total.textContent = row.total;
+      track.appendChild(bar);
+      track.appendChild(total);
+      chartRow.appendChild(unit);
+      chartRow.appendChild(track);
+      rowContainer.appendChild(chartRow);
+    });
+    chartElement.appendChild(rowContainer);
+  }
+
+  renderTicketChart(ticketCharts.over, 'over-48h-chart', 'over-48h-chart-legend', 'over-48h-chart-summary');
+  renderTicketChart(ticketCharts.under, 'under-48h-chart', 'under-48h-chart-legend', 'under-48h-chart-summary');
 
   // Cấu hình biến quản lý Sort và Filter
   var currentSortColumn = null; // 'donvi', 'thoigian' hoặc 'recheck'
@@ -1136,6 +1403,10 @@
       var underMetric = document.getElementById('metric-under-count');
       if (overMetric) overMetric.textContent = groups[0].tickets.length;
       if (underMetric) underMetric.textContent = groups[1].tickets.length;
+      if (data.ticket_charts) {
+        renderTicketChart(data.ticket_charts.over, 'over-48h-chart', 'over-48h-chart-legend', 'over-48h-chart-summary');
+        renderTicketChart(data.ticket_charts.under, 'under-48h-chart', 'under-48h-chart-legend', 'under-48h-chart-summary');
+      }
 
       initUnitDropdown();
       if (currentSortColumn) sortTable(currentSortColumn, true);

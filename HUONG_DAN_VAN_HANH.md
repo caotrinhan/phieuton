@@ -129,6 +129,7 @@ Nếu thay đổi quy trình đăng nhập, phân quyền hoặc session, sửa 
 - `/`: dashboard trang chủ.
 - `/upload-new`: nhận hai file Excel template mới, lưu tất cả các dòng có mã thuê bao/ngày yêu cầu hợp lệ cùng giá trị `TIEN_TRINH`, cập nhật mã đã có và đánh dấu mã vắng khỏi file là đã hoàn công.
 - Hai file Excel phải có cột `TIEN_TRINH`; dashboard và API chỉ truy vấn phiếu thuộc lần upload mới nhất, sau đó đưa tiến trình `Đã giao thi công` (không phân biệt hoa/thường, bỏ khoảng trắng đầu/cuối) vào hai nhóm thời gian tồn ở backend.
+- Biểu đồ trên dashboard dùng chính hai nhóm phiếu này: nhóm từ 48 giờ trở lên được chia theo các khoảng 48–72h, 72–96h và trên 96h; nhóm dưới 48 giờ được chia theo loại thiết bị. Biểu đồ được vẽ trong ứng dụng, không phụ thuộc Power BI.
 - `/tickets/<id>/reason`: cập nhật lý do và nhận ảnh.
 - `/ticket-images/<id>`: trả ảnh cho người đã đăng nhập.
 - `/export.xlsx`: xuất báo cáo Excel.
@@ -156,6 +157,7 @@ Dashboard trang chủ:
 
 - Thông tin batch mới nhất.
 - Kết quả upload gần nhất.
+- Hai biểu đồ thanh chồng cho phiếu tồn ≥48h và <48h; dữ liệu tự cập nhật cùng API bảng chi tiết.
 - Một bảng Tổng hợp.
 - Hai bảng Chi tiết theo giờ tồn: từ 48 giờ trở lên và dưới 48 giờ.
 - Modal cập nhật lý do và upload ảnh.

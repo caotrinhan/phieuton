@@ -100,6 +100,71 @@ def _get_open_ticket_groups(now: datetime | None = None) -> tuple[list[Ticket], 
     return over_48h, under_48h
 
 
+def _build_ticket_chart_data(
+    over_48h_tickets: list[Ticket],
+    under_48h_tickets: list[Ticket],
+    now: datetime | None = None,
+) -> dict:
+    now = now or _now()
+    age_categories = ["48h - 72h", "72h - 96h", "Trên 96h"]
+    over_by_unit = {}
+    for ticket in over_48h_tickets:
+        unit = (ticket.unit or "").strip() or "Chưa xác định"
+        row = over_by_unit.setdefault(unit, {category: 0 for category in age_categories})
+        age_hours = (now - ticket.request_at).total_seconds() / 3600
+        category_index = 0 if age_hours < 72 else 1 if age_hours < 96 else 2
+        row[age_categories[category_index]] += 1
+
+    preferred_equipment_order = [
+        "Fiber",
+        "Home Cloud camera",
+        "Indoor Camera PT",
+        "MetroNet FE",
+        "MyTV",
+        "Outdoor Camera PT",
+        "Wifi Mesh",
+    ]
+    under_by_unit = {}
+    equipment_types = set()
+    for ticket in under_48h_tickets:
+        unit = (ticket.unit or "").strip() or "Chưa xác định"
+        equipment = (ticket.equipment_type or "").strip() or "Khác"
+        equipment_types.add(equipment)
+        row = under_by_unit.setdefault(unit, {})
+        row[equipment] = row.get(equipment, 0) + 1
+
+    preferred_order = {
+        equipment.casefold(): index
+        for index, equipment in enumerate(preferred_equipment_order)
+    }
+    sorted_equipment_types = sorted(
+        equipment_types,
+        key=lambda equipment: (
+            preferred_order.get(equipment.casefold(), len(preferred_order)),
+            equipment.casefold(),
+        ),
+    )
+
+    def chart_rows(unit_counts: dict, categories: list[str]) -> list[dict]:
+        rows = []
+        for unit, counts in unit_counts.items():
+            values = [counts.get(category, 0) for category in categories]
+            total = sum(values)
+            rows.append({"unit": unit, "total": total, "values": values})
+        return sorted(rows, key=lambda row: (-row["total"], row["unit"].casefold()))
+
+    return {
+        "over": {
+            "categories": age_categories,
+            "rows": chart_rows(over_by_unit, age_categories),
+        },
+        "under": {
+            "categories": sorted_equipment_types,
+            "rows": chart_rows(under_by_unit, sorted_equipment_types),
+        },
+    }
+
+
 def load_new_tickets(ca_mau_path, bac_lieu_path):
     """
     Đọc các dòng có mã thuê bao trong hai file template mới.
@@ -215,6 +280,7 @@ def ping_online():
 def dashboard():
     batch = UploadBatch.query.order_by(UploadBatch.uploaded_at.desc()).first()
     tickets, under_48h_tickets = _get_open_ticket_groups()
+    ticket_charts = _build_ticket_chart_data(tickets, under_48h_tickets)
     
     units = {}
     for ticket in tickets:
@@ -256,6 +322,7 @@ def dashboard():
         batch=batch, 
         tickets=tickets, 
         under_48h_tickets=under_48h_tickets,
+        ticket_charts=ticket_charts,
         units=units, 
         summary_rows=summary_rows, 
         summary_total=summary_total,
@@ -635,6 +702,7 @@ def login_logs():
 @main_bp.get("/api/table-data")
 def get_table_data():
     over_48h_tickets, under_48h_tickets = _get_open_ticket_groups()
+    ticket_charts = _build_ticket_chart_data(over_48h_tickets, under_48h_tickets)
 
     def serialize_tickets(tickets: list[Ticket]) -> list[dict]:
         return [
@@ -674,4 +742,5 @@ def get_table_data():
     return {
         "over_48h_tickets": serialize_tickets(over_48h_tickets),
         "under_48h_tickets": serialize_tickets(under_48h_tickets),
+        "ticket_charts": ticket_charts,
     }
