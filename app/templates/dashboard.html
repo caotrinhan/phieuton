@@ -50,16 +50,9 @@
     filter: brightness(0.985);
   }
 
-  .hours-warning::after {
-    content: ">=100H CẦN XÁC MINH";
-    display: block;
-    margin-top: 2px;
-    padding: 1px 4px;
-    border-radius: 3px;
-    background: #e11d48;
-    color: #fff;
-    font-size: 10px;
-    font-weight: bold;
+  .warning-cell {
+    color: #be123c;
+    font-weight: 700;
   }
 
   .ticket-table-tools {
@@ -467,6 +460,7 @@
           <th>NGAY LAPPHIEU</th>
           <th class="sortable-header sort-age" title="Nhấn để sắp xếp theo Thời gian tồn">THOIGIAN_TON (h) <span class="sort-icon sort-icon-age">↕</span></th>
           {% if group_name != 'under' %}
+          <th>Cảnh báo</th>
           <th class="sortable-header sort-recheck" title="Nhấn để sắp xếp theo yêu cầu xác minh lại">YC xác minh lại <span class="sort-icon sort-icon-recheck">↕</span></th>
           <th>Lý do tồn (TTVT báo cáo)</th>
           <th>Hình ảnh</th>
@@ -505,8 +499,9 @@
           <td><button class="ticket-link ticket-name" type="button" data-modal="reason-modal-{{ ticket.id }}" data-ticket-unit="{{ ticket.unit }}">{{ ticket.subscriber_name }}</button></td>
           {% endif %}
           <td>{{ ticket.request_at.strftime('%d/%m/%Y') }}<br>{{ ticket.request_at.strftime('%H:%M:%S') }}</td>
-          <td class="hours{% if not has_reason and is_over_100 %} hours-warning{% endif %}">{{ ticket.age_hours }}</td>
+          <td class="hours">{{ ticket.age_hours }}</td>
           {% if group_name != 'under' %}
+          <td class="warning-cell">{% if not has_reason and is_over_100 %}>=100H CẦN XÁC MINH{% endif %}</td>
           <td>{{ 'X' if ticket.requires_reason_recheck else '' }}</td>
           <td class="reason-preview" style="{% if not has_reason %}{% if is_over_100 %}color: #9f1239; font-weight: 800;{% else %}color: #dc2626; font-weight: 600;{% endif %}{% else %}color: #16a34a;{% endif %}">
             {{ ticket.reason or 'Chưa xác minh' }}
@@ -1061,7 +1056,7 @@
       var requestDisplay = requestParts.length > 1 ?
         escapeHtml(requestParts[0]) + '<br>' + escapeHtml(requestParts.slice(1).join(' ')) : escapeHtml(requestParts[0]);
       var hoursDisplay = escapeHtml(ageHours.toFixed(1));
-      var hoursClass = !hasReason && isOver100 ? 'hours hours-warning' : 'hours';
+      var hoursWarning = !hasReason && isOver100 ? '>=100H CẦN XÁC MINH' : '';
 
       var reasonText = escapeHtml(ticket.reason || 'Chưa xác minh');
       if (ticket.reason_updated_by && ticket.reason_updated_at) {
@@ -1077,7 +1072,10 @@
       var updateInfo = ticket.reason_updated_by ?
         escapeHtml(ticket.reason_updated_by) + '<br>' + escapeHtml(ticket.reason_updated_at || '') :
         '<span class="muted">Chưa cập nhật</span>';
+      var warningColumn = !isUnder ?
+        '<td class="warning-cell">' + escapeHtml(hoursWarning) + '</td>' : '';
       var verificationColumns = isUnder ? '' :
+        warningColumn +
         '<td>' + (ticket.requires_reason_recheck ? 'X' : '') + '</td>' +
         '<td class="reason-preview" style="' + reasonStyle + '">' + reasonText + '</td>' +
         '<td class="thumbnail-cell">' + imagesHtml + '</td>';
@@ -1085,7 +1083,7 @@
       return '<tr class="' + rowClass + '" data-ticket-id="' + ticket.id + '" data-unit="' + escapeHtml(ticket.unit) + '" data-hours="' + ageHours + '" data-recheck="' + ticket.requires_reason_recheck + '">' +
         '<td>' + (index + 1) + '</td><td>' + escapeHtml(ticket.unit) + '</td><td>' + escapeHtml(ticket.equipment_type) + '</td>' +
         '<td>' + codeDisplay + '</td><td>' + nameDisplay + '</td>' +
-        '<td>' + requestDisplay + '</td><td class="' + hoursClass + '">' + hoursDisplay + '</td>' +
+        '<td>' + requestDisplay + '</td><td class="hours">' + hoursDisplay + '</td>' +
         verificationColumns + '<td>' + escapeHtml(ticket.address) + '</td><td>' + escapeHtml(ticket.phone) + '</td>' +
         '<td>' + escapeHtml(ticket.contract_type) + '</td>' +
         '<td class="updated">' + updateInfo + '</td><td><span class="status waiting">' + escapeHtml(ticket.status) + '</span></td></tr>';
