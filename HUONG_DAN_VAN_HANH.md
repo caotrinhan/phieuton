@@ -128,7 +128,7 @@ Nếu thay đổi quy trình đăng nhập, phân quyền hoặc session, sửa 
 
 - `/`: dashboard trang chủ.
 - `/upload-new`: nhận hai file Excel template mới, lưu tất cả các dòng có mã thuê bao/ngày yêu cầu hợp lệ cùng giá trị `TIEN_TRINH`, cập nhật mã đã có và đánh dấu mã vắng khỏi file là đã hoàn công.
-- Hai file Excel phải có cột `TIEN_TRINH`; dashboard và API chỉ đưa tiến trình `Đã giao thi công` (không phân biệt hoa/thường, bỏ khoảng trắng đầu/cuối) vào hai nhóm thời gian tồn.
+- Hai file Excel phải có cột `TIEN_TRINH`; dashboard và API chỉ truy vấn phiếu thuộc lần upload mới nhất, sau đó đưa tiến trình `Đã giao thi công` (không phân biệt hoa/thường, bỏ khoảng trắng đầu/cuối) vào hai nhóm thời gian tồn ở backend.
 - `/tickets/<id>/reason`: cập nhật lý do và nhận ảnh.
 - `/ticket-images/<id>`: trả ảnh cho người đã đăng nhập.
 - `/export.xlsx`: xuất báo cáo Excel.

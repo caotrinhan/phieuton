@@ -31,6 +31,13 @@
     overflow: auto;
   }
 
+  .table-empty-message {
+    margin: 0;
+    padding: 14px;
+    color: #64748b;
+    text-align: center;
+  }
+
   .detail-panel .table-wrap thead th {
     position: sticky;
     top: 0;
@@ -504,12 +511,11 @@
           <td class="updated">{% if ticket.reason_updated_by %}{{ ticket.reason_updated_by.email }}<br>{{ ticket.reason_updated_at.strftime('%d/%m/%Y %H:%M:%S') }}{% else %}<span class="muted">Chưa cập nhật</span>{% endif %}</td>
           <td><span class="status waiting">{{ ticket.status }}</span></td>
         </tr>
-        {% else %}
-        <tr><td colspan="{{ 12 if group_name == 'under' else 15 }}">{{ empty_text }}</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+  <p class="table-empty-message" data-empty-group="{{ group_name }}" {% if table_tickets %}hidden{% endif %}>{{ empty_text }}</p>
   {% if group_name == 'under' %}
   <nav class="ticket-table-pagination" aria-label="Phân trang phiếu dưới 48 giờ">
     <button type="button" data-page-action="first">Đầu</button>
@@ -1023,9 +1029,8 @@
     });
   }
 
-  function renderTicketRows(tickets, emptyText, groupName) {
-    var isUnder = groupName === 'under';
-    if (!tickets.length) return '<tr><td colspan="' + (isUnder ? 12 : 15) + '">' + emptyText + '</td></tr>';
+  function renderTicketRows(tickets) {
+    if (!tickets.length) return '';
     return tickets.map(function(ticket, index) {
       var hasReason = ticket.reason && ticket.reason.trim() !== '';
       var ageHours = Number(ticket.age_hours) || 0;
@@ -1091,8 +1096,8 @@
     })
     .then(function(data) {
       var groups = [
-        {name: 'over', tickets: data.over_48h_tickets || [], empty: 'Chưa có phiếu tồn từ 48 giờ trở lên.'},
-        {name: 'under', tickets: data.under_48h_tickets || [], empty: 'Chưa có phiếu tồn dưới 48 giờ.'}
+        {name: 'over', tickets: data.over_48h_tickets || []},
+        {name: 'under', tickets: data.under_48h_tickets || []}
       ];
       var changedGroup = groups.some(function(group) {
         var tbody = document.querySelector('.detail-table tbody[data-ticket-group="' + group.name + '"]');
@@ -1106,7 +1111,9 @@
       groups.forEach(function(group) {
         var tbody = document.querySelector('.detail-table tbody[data-ticket-group="' + group.name + '"]');
         if (!tbody) return;
-        tbody.innerHTML = renderTicketRows(group.tickets, group.empty, group.name);
+        tbody.innerHTML = renderTicketRows(group.tickets);
+        var emptyMessage = document.querySelector('[data-empty-group="' + group.name + '"]');
+        if (emptyMessage) emptyMessage.hidden = group.tickets.length > 0;
         var count = document.querySelector('[data-count-group="' + group.name + '"]');
         if (count) count.textContent = group.tickets.length;
       });

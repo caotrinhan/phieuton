@@ -142,6 +142,7 @@ mysql -u root -p phieuton < migration_ticket_progress.sql
 ```
 
 Migration thêm cột `progress` vào bảng `tickets`. Upload sẽ lưu tất cả dòng có mã thuê bao và ngày yêu cầu hợp lệ, kèm giá trị `TIEN_TRINH`; dashboard chỉ hiển thị dòng có tiến trình `Đã giao thi công`.
+Các danh sách trên dashboard, API và file Excel được phân nhóm >48h/<48h ở backend và chỉ lấy phiếu thuộc lần upload mới nhất.
 
 ## 9. Trạng thái phiếu
 

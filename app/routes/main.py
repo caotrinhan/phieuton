@@ -59,8 +59,16 @@ def _get_allowed_units() -> list:
 
 def _get_open_ticket_groups(now: datetime | None = None) -> tuple[list[Ticket], list[Ticket]]:
     now = now or _now()
+    latest_batch = UploadBatch.query.order_by(
+        UploadBatch.uploaded_at.desc(),
+        UploadBatch.id.desc(),
+    ).first()
+    if latest_batch is None:
+        return [], []
+
     tickets = (
         Ticket.query.filter(
+            Ticket.latest_batch_id == latest_batch.id,
             Ticket.status.in_(
                 [
                     Ticket.STATUS_PENDING,
