@@ -129,7 +129,9 @@ Nếu thay đổi quy trình đăng nhập, phân quyền hoặc session, sửa 
 - `/`: dashboard trang chủ.
 - `/upload-new`: nhận hai file Excel template mới, lưu tất cả các dòng có mã thuê bao/ngày yêu cầu hợp lệ cùng giá trị `TIEN_TRINH`, cập nhật mã đã có và đánh dấu mã vắng khỏi file là đã hoàn công.
 - Hai file Excel phải có cột `TIEN_TRINH`; dashboard và API chỉ truy vấn phiếu thuộc lần upload mới nhất, sau đó đưa tiến trình `Đã giao thi công` (không phân biệt hoa/thường, bỏ khoảng trắng đầu/cuối) vào hai nhóm thời gian tồn ở backend.
+- Bộ đếm **Phiếu cũ** trên kết quả upload chỉ tính mã thuê bao đã có trong database, đồng thời thuộc một trong các dịch vụ được theo dõi (Internet tr, Leasedline, Megawan, MetroNet, MyTV, Fiber, Camera hoặc Mesh) và có tiến trình `Đã giao thi công`. Bộ đếm **Đã xử lý** vẫn là tổng phiếu vắng khỏi file upload mới nhất được chuyển sang trạng thái đã hoàn công; số cập nhật được thông báo sau upload vẫn tính mọi mã đã tồn tại.
 - Biểu đồ trên dashboard dùng chính hai nhóm phiếu này: nhóm từ 48 giờ trở lên được chia theo các khoảng 48–72h, 72–96h và trên 96h; nhóm dưới 48 giờ được chia theo loại thiết bị. Biểu đồ được vẽ trong ứng dụng, không phụ thuộc Power BI.
+- `/api/table-data`: trả dữ liệu bảng chi tiết và dữ liệu tổng hợp cho hai biểu đồ; frontend gọi lại định kỳ để cập nhật.
 - `/tickets/<id>/reason`: cập nhật lý do và nhận ảnh.
 - `/ticket-images/<id>`: trả ảnh cho người đã đăng nhập.
 - `/export.xlsx`: xuất báo cáo Excel.
@@ -164,6 +166,18 @@ Dashboard trang chủ:
 - Modal xem ảnh, zoom và xoay.
 
 Khi sửa bảng, phải giữ đúng tên trường được truyền từ `main.py`.
+
+##### Công nghệ và cách hoạt động của biểu đồ
+
+Biểu đồ được dựng trực tiếp trong ứng dụng Flask, không nhúng Power BI và không cần cài thư viện biểu đồ bên ngoài:
+
+- **Python/Flask** lấy hai danh sách phiếu đang mở và tổng hợp số lượng theo tổ kỹ thuật. Với phiếu từ 48 giờ trở lên, thời gian tồn được chia thành ba nhóm: 48–72 giờ, 72–96 giờ và trên 96 giờ. Với phiếu dưới 48 giờ, số lượng được chia theo loại thiết bị.
+- **Jinja2** truyền dữ liệu tổng hợp ban đầu từ Flask vào trang dashboard.
+- **HTML/CSS** tạo khung biểu đồ, chú giải, thanh ngang nhiều màu, nhãn tổng và bố cục cuộn khi danh sách tổ dài.
+- **JavaScript thuần** dựng trục số, chú giải và từng đoạn thanh theo dữ liệu; các tổ được sắp xếp theo tổng số phiếu giảm dần.
+- **`/api/table-data`** cung cấp dữ liệu mới cho cả bảng và biểu đồ. Khi API làm mới danh sách, biểu đồ cũng được vẽ lại để phản ánh số phiếu và tuổi tồn hiện tại.
+
+Mỗi hàng biểu đồ tương ứng với một tổ kỹ thuật; chiều dài thanh biểu thị tổng số phiếu, màu sắc biểu thị nhóm thời gian hoặc loại thiết bị, và con số cuối thanh là tổng. Cách làm này giữ số liệu nhất quán với hai danh sách chi tiết, không phụ thuộc dịch vụ báo cáo riêng và không phát sinh chi phí/thư viện biểu đồ bổ sung.
 
 #### `app/templates/upload.html`
 

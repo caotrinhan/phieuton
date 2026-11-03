@@ -40,6 +40,18 @@ def _image_allowed(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in {"jpg", "jpeg", "png", "webp"}
 
 
+def _is_open_ticket_equipment_type(equipment_type: str | None) -> bool:
+    normalized_type = (equipment_type or "").strip().casefold()
+    return any(
+        service_type.casefold() in normalized_type
+        for service_type in OPEN_TICKET_EQUIPMENT_TYPES
+    )
+
+
+def _has_open_ticket_progress(progress: str | None) -> bool:
+    return (progress or "").strip().casefold() == UPLOAD_PROGRESS_STATUS
+
+
 def _get_allowed_units() -> list:
     if current_user.is_admin:
         return []
@@ -90,8 +102,7 @@ def _get_open_ticket_groups(now: datetime | None = None) -> tuple[list[Ticket], 
     under_48h = []
     threshold = timedelta(hours=48)
     for ticket in tickets:
-        progress = (ticket.progress or "").strip().casefold()
-        if progress != UPLOAD_PROGRESS_STATUS:
+        if not _has_open_ticket_progress(ticket.progress):
             continue
         if now - ticket.request_at >= threshold:
             over_48h.append(ticket)
@@ -445,11 +456,17 @@ def upload_new_template():
         existing_db_codes = set(existing_tickets)
         new_codes = set()
         existing_codes = set()
+        existing_open_service_codes = set()
         for record in records:
             code_key = record["subscriber_code"].strip().lower()
             ticket = existing_tickets.get(code_key)
             if code_key in existing_db_codes:
                 existing_codes.add(code_key)
+                if (
+                    _is_open_ticket_equipment_type(record["equipment_type"])
+                    and _has_open_ticket_progress(record["progress"])
+                ):
+                    existing_open_service_codes.add(code_key)
             else:
                 new_codes.add(code_key)
             if ticket is None:
@@ -481,7 +498,7 @@ def upload_new_template():
                 status_changed_count += 1
 
         batch.new_tickets = len(new_codes)
-        batch.existing_tickets = len(existing_codes)
+        batch.existing_tickets = len(existing_open_service_codes)
         batch.status_changed_tickets = status_changed_count
 
         db.session.commit()
