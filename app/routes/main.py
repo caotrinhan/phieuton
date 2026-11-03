@@ -15,6 +15,16 @@ from ..time_utils import local_now
 main_bp = Blueprint("main", __name__)
 
 ACTIVE_USERS = {}
+OPEN_TICKET_EQUIPMENT_TYPES = (
+    "Internet tr",
+    "Leasedline",
+    "Megawan",
+    "MetroNet",
+    "MyTV",
+    "Fiber",
+    "Camera",
+    "Mesh",
+)
 
 
 def _allowed(filename: str) -> bool:
@@ -56,7 +66,13 @@ def _get_open_ticket_groups(now: datetime | None = None) -> tuple[list[Ticket], 
                     Ticket.STATUS_WAITING,
                     Ticket.STATUS_UNDER_48H,
                 ]
-            )
+            ),
+            db.or_(
+                *(
+                    Ticket.equipment_type.ilike(f"%{equipment_type}%")
+                    for equipment_type in OPEN_TICKET_EQUIPMENT_TYPES
+                )
+            ),
         )
         .order_by(Ticket.unit, Ticket.request_at.asc())
         .all()
