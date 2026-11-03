@@ -399,12 +399,16 @@
     <div>
       <h2 style="margin-bottom: 2px; color: #005aa0; font-weight: 700;">{{ heading }} <span class="ticket-count" data-count-group="{{ group_name }}">{{ table_tickets|length }}</span></h2>
       <p class="panel-help" style="margin: 0; font-size: 12px; color: #64748b;">
+        {% if group_name == 'under' %}
+        Danh sách phiếu tồn dưới 48 giờ.
+        {% else %}
         {% if current_user.is_authenticated and current_user.is_admin %}
         Nhấn mã thuê bao để cập nhật yêu cầu check lại; nhấn tên thuê bao để cập nhật lý do tồn/hình ảnh.
         {% else %}
         Nhấn vào mã/tên thuê bao để cập nhật lý do tồn/hình ảnh.
         {% endif %}
         Nhấn vào ảnh để xem phóng to ảnh.
+        {% endif %}
       </p>
     </div>
     {% if group_name == 'over' %}
@@ -442,9 +446,11 @@
           <th>TEN_TB</th>
           <th>NGAY LAPPHIEU</th>
           <th class="sortable-header sort-age" title="Nhấn để sắp xếp theo Thời gian tồn">THOIGIAN_TON (h) <span class="sort-icon sort-icon-age">↕</span></th>
+          {% if group_name != 'under' %}
           <th class="sortable-header sort-recheck" title="Nhấn để sắp xếp theo yêu cầu xác minh lại">YC xác minh lại <span class="sort-icon sort-icon-recheck">↕</span></th>
           <th>Lý do tồn (TTVT báo cáo)</th>
           <th>Hình ảnh</th>
+          {% endif %}
           <th>Diachi Ld</th>
           <th>So Dt</th>
           <th>TEN_LOAIHD</th>
@@ -465,15 +471,22 @@
           <td>{{ ticket.unit }}</td>
           <td>{{ ticket.equipment_type }}</td>
           <td>
-            {% if current_user.is_authenticated and current_user.is_admin %}
+            {% if group_name == 'under' %}
+            {{ ticket.subscriber_code }}
+            {% elif current_user.is_authenticated and current_user.is_admin %}
             <button class="ticket-link" type="button" data-check-ticket="{{ ticket.id }}" data-ticket-code="{{ ticket.subscriber_code }}" data-ticket-name="{{ ticket.subscriber_name or '' }}" data-check-current="{{ 'true' if ticket.requires_reason_recheck else 'false' }}">{{ ticket.subscriber_code }}</button>
             {% else %}
             <button class="ticket-link" type="button" data-modal="reason-modal-{{ ticket.id }}" data-ticket-unit="{{ ticket.unit }}">{{ ticket.subscriber_code }}</button>
             {% endif %}
           </td>
+          {% if group_name == 'under' %}
+          <td>{{ ticket.subscriber_name }}</td>
+          {% else %}
           <td><button class="ticket-link ticket-name" type="button" data-modal="reason-modal-{{ ticket.id }}" data-ticket-unit="{{ ticket.unit }}">{{ ticket.subscriber_name }}</button></td>
+          {% endif %}
           <td>{{ ticket.request_at.strftime('%d/%m/%Y') }}<br>{{ ticket.request_at.strftime('%H:%M:%S') }}</td>
           <td class="hours">{{ ticket.age_hours }}{% if not has_reason and is_over_100 %}<span style="display: block; font-size: 10px; background: #e11d48; color: #fff; padding: 1px 4px; border-radius: 3px; font-weight: bold; margin-top: 2px;">>=100H CẦN XÁC MINH</span>{% endif %}</td>
+          {% if group_name != 'under' %}
           <td>{{ 'X' if ticket.requires_reason_recheck else '' }}</td>
           <td class="reason-preview" style="{% if not has_reason %}{% if is_over_100 %}color: #9f1239; font-weight: 800;{% else %}color: #dc2626; font-weight: 600;{% endif %}{% else %}color: #16a34a;{% endif %}">
             {{ ticket.reason or 'Chưa xác minh' }}
@@ -484,15 +497,15 @@
             <button class="thumbnail-button" type="button" data-image-url="{{ url_for('main.ticket_image', image_id=image.id) }}" data-image-name="{{ image.original_filename }}" style="background: none; border: 1px solid var(--line); border-radius: 4px; padding: 2px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin-right: 4px; margin-bottom: 4px;" title="{{ image.original_filename }}"><img src="{{ url_for('main.ticket_image', image_id=image.id) }}" alt="{{ image.original_filename }}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px; display: block;"></button>
             {% else %}<span class="muted" style="color: #dc2626;">Chưa có</span>{% endfor %}
           </td>
+          {% endif %}
           <td>{{ ticket.address or '' }}</td>
           <td>{{ ticket.phone or '' }}</td>
           <td>{{ ticket.contract_type or '' }}</td>
-          <td>{{ 'Có' if ticket.requires_reason_recheck else 'Không' }}</td>
           <td class="updated">{% if ticket.reason_updated_by %}{{ ticket.reason_updated_by.email }}<br>{{ ticket.reason_updated_at.strftime('%d/%m/%Y %H:%M:%S') }}{% else %}<span class="muted">Chưa cập nhật</span>{% endif %}</td>
           <td><span class="status waiting">{{ ticket.status }}</span></td>
         </tr>
         {% else %}
-        <tr><td colspan="15">{{ empty_text }}</td></tr>
+        <tr><td colspan="{{ 12 if group_name == 'under' else 15 }}">{{ empty_text }}</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -1010,8 +1023,9 @@
     });
   }
 
-  function renderTicketRows(tickets, emptyText) {
-    if (!tickets.length) return '<tr><td colspan="15">' + emptyText + '</td></tr>';
+  function renderTicketRows(tickets, emptyText, groupName) {
+    var isUnder = groupName === 'under';
+    if (!tickets.length) return '<tr><td colspan="' + (isUnder ? 12 : 15) + '">' + emptyText + '</td></tr>';
     return tickets.map(function(ticket, index) {
       var hasReason = ticket.reason && ticket.reason.trim() !== '';
       var ageHours = Number(ticket.age_hours) || 0;
@@ -1019,9 +1033,11 @@
       var rowClass = hasReason ? 'row-verified' : (isOver100 ? 'row-warning-heavy' : 'row-warning-light');
       if (ticket.requires_reason_recheck) rowClass += ' row-recheck';
 
-      var codeButton = isAdmin ?
+      var codeDisplay = isUnder ? escapeHtml(ticket.subscriber_code) : (isAdmin ?
         '<button class="ticket-link" type="button" data-check-ticket="' + ticket.id + '" data-ticket-code="' + escapeHtml(ticket.subscriber_code) + '" data-ticket-name="' + escapeHtml(ticket.subscriber_name) + '" data-check-current="' + ticket.requires_reason_recheck + '">' + escapeHtml(ticket.subscriber_code) + '</button>' :
-        '<button class="ticket-link" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + escapeHtml(ticket.unit) + '">' + escapeHtml(ticket.subscriber_code) + '</button>';
+        '<button class="ticket-link" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + escapeHtml(ticket.unit) + '">' + escapeHtml(ticket.subscriber_code) + '</button>');
+      var nameDisplay = isUnder ? escapeHtml(ticket.subscriber_name) :
+        '<button class="ticket-link ticket-name" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + escapeHtml(ticket.unit) + '">' + escapeHtml(ticket.subscriber_name) + '</button>';
       var requestParts = (ticket.request_at || '').split(' ');
       var requestDisplay = requestParts.length > 1 ?
         escapeHtml(requestParts[0]) + '<br>' + escapeHtml(requestParts.slice(1).join(' ')) : escapeHtml(requestParts[0]);
@@ -1044,16 +1060,17 @@
       var updateInfo = ticket.reason_updated_by ?
         escapeHtml(ticket.reason_updated_by) + '<br>' + escapeHtml(ticket.reason_updated_at || '') :
         '<span class="muted">Chưa cập nhật</span>';
+      var verificationColumns = isUnder ? '' :
+        '<td>' + (ticket.requires_reason_recheck ? 'X' : '') + '</td>' +
+        '<td class="reason-preview" style="' + reasonStyle + '">' + reasonText + '</td>' +
+        '<td class="thumbnail-cell">' + imagesHtml + '</td>';
 
       return '<tr class="' + rowClass + '" data-ticket-id="' + ticket.id + '" data-unit="' + escapeHtml(ticket.unit) + '" data-hours="' + ageHours + '" data-recheck="' + ticket.requires_reason_recheck + '">' +
         '<td>' + (index + 1) + '</td><td>' + escapeHtml(ticket.unit) + '</td><td>' + escapeHtml(ticket.equipment_type) + '</td>' +
-        '<td>' + codeButton + '</td>' +
-        '<td><button class="ticket-link ticket-name" type="button" data-modal="reason-modal-' + ticket.id + '" data-ticket-unit="' + escapeHtml(ticket.unit) + '">' + escapeHtml(ticket.subscriber_name) + '</button></td>' +
+        '<td>' + codeDisplay + '</td><td>' + nameDisplay + '</td>' +
         '<td>' + requestDisplay + '</td><td class="hours">' + hoursDisplay + '</td>' +
-        '<td>' + (ticket.requires_reason_recheck ? 'X' : '') + '</td>' +
-        '<td class="reason-preview" style="' + reasonStyle + '">' + reasonText + '</td>' +
-        '<td class="thumbnail-cell">' + imagesHtml + '</td><td>' + escapeHtml(ticket.address) + '</td><td>' + escapeHtml(ticket.phone) + '</td>' +
-        '<td>' + escapeHtml(ticket.contract_type) + '</td><td>' + (ticket.requires_reason_recheck ? 'Có' : 'Không') + '</td>' +
+        verificationColumns + '<td>' + escapeHtml(ticket.address) + '</td><td>' + escapeHtml(ticket.phone) + '</td>' +
+        '<td>' + escapeHtml(ticket.contract_type) + '</td>' +
         '<td class="updated">' + updateInfo + '</td><td><span class="status waiting">' + escapeHtml(ticket.status) + '</span></td></tr>';
     }).join('');
   }
@@ -1089,7 +1106,7 @@
       groups.forEach(function(group) {
         var tbody = document.querySelector('.detail-table tbody[data-ticket-group="' + group.name + '"]');
         if (!tbody) return;
-        tbody.innerHTML = renderTicketRows(group.tickets, group.empty);
+        tbody.innerHTML = renderTicketRows(group.tickets, group.empty, group.name);
         var count = document.querySelector('[data-count-group="' + group.name + '"]');
         if (count) count.textContent = group.tickets.length;
       });
