@@ -50,6 +50,18 @@
     filter: brightness(0.985);
   }
 
+  .hours-warning::after {
+    content: ">=100H CẦN XÁC MINH";
+    display: block;
+    margin-top: 2px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: #e11d48;
+    color: #fff;
+    font-size: 10px;
+    font-weight: bold;
+  }
+
   .ticket-table-tools {
     display: flex;
     align-items: center;
@@ -493,7 +505,7 @@
           <td><button class="ticket-link ticket-name" type="button" data-modal="reason-modal-{{ ticket.id }}" data-ticket-unit="{{ ticket.unit }}">{{ ticket.subscriber_name }}</button></td>
           {% endif %}
           <td>{{ ticket.request_at.strftime('%d/%m/%Y') }}<br>{{ ticket.request_at.strftime('%H:%M:%S') }}</td>
-          <td class="hours">{{ ticket.age_hours }}{% if not has_reason and is_over_100 %}<span style="display: block; font-size: 10px; background: #e11d48; color: #fff; padding: 1px 4px; border-radius: 3px; font-weight: bold; margin-top: 2px;">>=100H CẦN XÁC MINH</span>{% endif %}</td>
+          <td class="hours{% if not has_reason and is_over_100 %} hours-warning{% endif %}">{{ ticket.age_hours }}</td>
           {% if group_name != 'under' %}
           <td>{{ 'X' if ticket.requires_reason_recheck else '' }}</td>
           <td class="reason-preview" style="{% if not has_reason %}{% if is_over_100 %}color: #9f1239; font-weight: 800;{% else %}color: #dc2626; font-weight: 600;{% endif %}{% else %}color: #16a34a;{% endif %}">
@@ -1049,9 +1061,7 @@
       var requestDisplay = requestParts.length > 1 ?
         escapeHtml(requestParts[0]) + '<br>' + escapeHtml(requestParts.slice(1).join(' ')) : escapeHtml(requestParts[0]);
       var hoursDisplay = escapeHtml(ageHours.toFixed(1));
-      if (!hasReason && isOver100) {
-        hoursDisplay += '<span style="display: block; font-size: 10px; background: #e11d48; color: #fff; padding: 1px 4px; border-radius: 3px; font-weight: bold; margin-top: 2px;">>=100H CẦN XÁC MINH</span>';
-      }
+      var hoursClass = !hasReason && isOver100 ? 'hours hours-warning' : 'hours';
 
       var reasonText = escapeHtml(ticket.reason || 'Chưa xác minh');
       if (ticket.reason_updated_by && ticket.reason_updated_at) {
@@ -1075,7 +1085,7 @@
       return '<tr class="' + rowClass + '" data-ticket-id="' + ticket.id + '" data-unit="' + escapeHtml(ticket.unit) + '" data-hours="' + ageHours + '" data-recheck="' + ticket.requires_reason_recheck + '">' +
         '<td>' + (index + 1) + '</td><td>' + escapeHtml(ticket.unit) + '</td><td>' + escapeHtml(ticket.equipment_type) + '</td>' +
         '<td>' + codeDisplay + '</td><td>' + nameDisplay + '</td>' +
-        '<td>' + requestDisplay + '</td><td class="hours">' + hoursDisplay + '</td>' +
+        '<td>' + requestDisplay + '</td><td class="' + hoursClass + '">' + hoursDisplay + '</td>' +
         verificationColumns + '<td>' + escapeHtml(ticket.address) + '</td><td>' + escapeHtml(ticket.phone) + '</td>' +
         '<td>' + escapeHtml(ticket.contract_type) + '</td>' +
         '<td class="updated">' + updateInfo + '</td><td><span class="status waiting">' + escapeHtml(ticket.status) + '</span></td></tr>';
