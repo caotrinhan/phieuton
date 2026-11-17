@@ -131,6 +131,15 @@
     color: #075985;
     font-weight: 700;
   }
+  .summary-panel table thead th.total-column,
+  .summary-panel table tbody td.total-column {
+    background-color: #fef08a !important;
+    color: #713f12;
+    font-weight: 700;
+  }
+  .summary-panel table thead th.total-column {
+    background-color: #facc15 !important;
+  }
 
   .detail-panel table td:nth-child(5), /* TEN_TB */
   .detail-panel table td:nth-child(9), /* Lý do tồn */
@@ -516,7 +525,7 @@
 <!-- Bảng Tổng hợp -->
 <section class="panel summary-panel" style="margin-bottom: 20px;">
   <div class="panel-title" style="padding: 14px 18px; border-bottom: 1px solid rgba(226, 232, 240, 0.8);">
-    <h2 style="margin: 0; color: #005aa0; font-weight: 700;">Tổng hợp phiếu tồn từ 48h theo đơn vị</h2>
+    <h2 style="margin: 0; color: #005aa0; font-weight: 700;">Tổng hợp phiếu tồn trên 48h theo đơn vị</h2>
     <span style="font-size: 12px; color: #64748b;">{{ summary_rows|length }} đơn vị</span>
   </div>
   <div class="table-wrap">
@@ -530,7 +539,7 @@
           <th>MyTV</th>
           <th>Mesh</th>
           <th>Camera</th>
-          <th>Tổng</th>
+          <th class="total-column">Tổng</th>
           <th>TTVT đã xác minh lý do</th>
           <th>TL xác minh(%)</th>
           <th>YC xác minh lại lý do tồn</th>
@@ -546,7 +555,7 @@
           <td>{{ row.mytv }}</td>
           <td>{{ row.mesh }}</td>
           <td>{{ row.camera }}</td>
-          <td style="font-weight: bold;">{{ row.total }}</td>
+          <td class="total-column">{{ row.total }}</td>
           <td>{{ row.reported }}</td>
           <td>{{ (row.reported * 100 / row.total)|round(2) }}</td>
           <td>{{ row.requires_reason_recheck }}</td>
@@ -560,7 +569,7 @@
           <td>{{ summary_total.mytv }}</td>
           <td>{{ summary_total.mesh }}</td>
           <td>{{ summary_total.camera }}</td>
-          <td style="font-weight: bold; color: #dc2626; background-color: #7dc607;">{{ summary_total.total }}</td>
+          <td class="total-column">{{ summary_total.total }}</td>
           <td>{{ summary_total.reported }}</td>
           <td>{{ (summary_total.reported * 100 / summary_total.total)|round(2) if summary_total.total else 0 }}</td>
           <td>{{ summary_total.requires_reason_recheck }}</td>
